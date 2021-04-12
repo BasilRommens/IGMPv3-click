@@ -76,11 +76,11 @@ struct Query {
     uint16_t getCheckSum();
     void setGroupAddress(in_addr);
     in_addr getGroupAddress();
-    void setReservationField();
+    void setReservationField(uint8_t);
     uint8_t getReservationField();
     void setSFlag();
     uint8_t getSFlag();
-    void setQRV();
+    void setQRV(uint8_t);
     uint8_t getQRV();
     void setQQIC(uint8_t);
     uint8_t getQQIC();
@@ -91,6 +91,8 @@ struct Query {
     void removeAllSourceAddress();
     in_addr getSourceAddress(uint16_t);
     Vector<in_addr> getAllSourceAddresses();
+private:
+    Vector<uint8_t> getEntirePacket();
 };
 
 #endif //TCSP_IGMPV3_QUERY_HH
