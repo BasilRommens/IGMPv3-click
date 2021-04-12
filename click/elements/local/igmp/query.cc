@@ -1,101 +1,144 @@
 #include "query.hh"
 
 // TODO fix this piece of code
-int Query::getMaxResponseTime() {
-    if (maxRespCode < 128) {
-        return maxRespCode;
-    } else {
-        // 0th bit = 1
-        // bit 1-3 exponent
-        uint8_t exp = (maxRespCode >> 4) & 0x7;
-        // bit 4-7 mantissa
-        uint8_t mant = maxRespCode & 0xF;
-        return (mant | 0x10) << (exp + 3);
-    }
+int Query::getMaxResponseTime()
+{
+    return codeToValue(maxRespCode);
 }
 
-void Query::setMaxRespCode(uint8_t _maxRespCode) {
+void Query::setMaxRespCode(uint8_t _maxRespCode)
+{
     maxRespCode = _maxRespCode;
 }
 
-void Query::setCheckSum() {
+void Query::setCheckSum()
+{
     // TODO calculate checksum
 }
 
-uint8_t Query::getCheckSum() {
+uint8_t Query::getCheckSum()
+{
     return checksum;
 }
 
-void Query::setGroupAddress(in_addr _groupAddress) {
+void Query::setGroupAddress(in_addr _groupAddress)
+{
     groupAddress = _groupAddress;
 }
 
-in_addr Query::getGroupAddress() {
+in_addr Query::getGroupAddress()
+{
     return groupAddress;
 }
 
-void Query::setReservationField(uint8_t _resv) {
+void Query::setReservationField(uint8_t _resv)
+{
     resv = _resv;
 }
 
-uint8_t Query::getReservationField() {
+uint8_t Query::getReservationField()
+{
     return resv;
 }
 
-void Query::setSFlag(uint8_t) {
-    // TODO
+void Query::setSFlag(uint8_t _SFlag)
+{
+    s = _SFlag;
 }
 
-uint8_t Query::getSFlag() {
+uint8_t Query::getSFlag()
+{
     return s;
 }
 
-void Query::setQRV(uint8_t _QRV) {
+void Query::setQRV(uint8_t _QRV)
+{
+    // 7 is the maximum value of QRV so if it exceeds we need to set it to 0,
+    // otherwise keep it normal.
+    if (_QRV>7) {
+        QRV = 0;
+    }
+    else {
+        QRV = _QRV;
+    }
+}
+
+uint8_t Query::getQRV()
+{
+    // returns the QRV
+    return QRV;
+}
+
+void Query::setQQIC(uint8_t _QQIC)
+{
+    QQIC = _QQIC
+}
+
+uint8_t Query::getQQI()
+{
+    return codeToValue(QQIC);
+}
+
+void Query::setNumberOfSources(int _numberOfSources)
+{
+    // Ensure that the number of sources never exceeds 366
+    if (_numberOfSources<=366) {
+        numberOfSources = _numberOfSources;
+    }
+}
+
+uint16_t Query::getNumberOfSources()
+{
+    return numberOfSources;
+}
+
+void Query::addSourceAddress(in_addr _sourceAddress)
+{
+    // Do not exceed 366 number of sources, add if possible +
+    // increase number of sources
+    if (numberOfSources<366) {
+        sourceAddress.push_back(_sourceAddress);
+        numberOfSources += 1;
+    }
+}
+
+void Query::removeSourceAddress(in_addr)
+{
     // TODO
 }
 
-uint8_t Query::getQRV() {
-    // TODO
+void Query::removeAllSourceAddress()
+{
+    sourceAddress.clear();
 }
 
-void Query::setQQIC(uint8_t _QQIC) {
-    // TODO
+in_addr Query::getSourceAddress(uint16_t addressLocation)
+{
+    return sourceAddress[addressLocation]
 }
 
-uint8_t Query::getQQIC() {
-    // TODO
-}
-
-void Query::setNumberOfSources(int _numberOfSources) {
-    // TODO
-    numberOfSources = _numberOfSources
-}
-
-uint16_t Query::getNumberOfSources() {
-    // TODO
-}
-
-void Query::addSourceAddress(in_addr) {
-    // TODO
-}
-
-void Query::removeSourceAddress(in_addr) {
-    // TODO
-}
-
-void Query::removeAllSourceAddress() {
-    // TODO
-}
-
-in_addr Query::getSourceAddress(uint16_t) {
-    // TODO
-}
-
-Vector<in_addr> Query::getAllSourceAddresses() {
+Vector<in_addr> Query::getAllSourceAddresses()
+{
     return sourceAddress;
 }
 
-Vector<uint8_t> Query::getEntirePacket() {
+Vector<uint8_t> Query::getEntirePacket()
+{
     // TODO generate entire packet
     return nullptr
+}
+
+int Query::codeToValue(int code)
+{
+    if (code<128) {
+        return code;
+    }
+    else {
+        // 0th bit = 1
+        // bit 1-3 exponent
+        uint8_t exp = (code >> 4) & 0x7;
+        // bit 4-7 mantissa
+        uint8_t mant = code & 0xF;
+        return (mant | 0x10) << (exp+3);
+    }
 }
