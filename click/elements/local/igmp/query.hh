@@ -31,47 +31,21 @@ struct Query {
     uint16_t checksum;
 
     /**  The Group Address field is set to zero when sending a General Query,
-    * and set to the IP multicast address being queried when sending a
-    * Group-Specific Query or Group-and-Source-Specific Query (see section
-    * 4.1.9, below).
+     * and set to the IP multicast address being queried when sending a
+     * Group-Specific Query or Group-and-Source-Specific Query (see section
+     * 4.1.9, below).
      * (RFC 3376 section 4.1.3)
-    * 32 bits, IP address
+     * 32 bits, IP address
      */
     in_addr groupAddress;
 
     /**
-     * The Resv field is set to zero on transmission, and ignored on
-     * reception.
-     * (RFC 3376 section 4.1.4)
-     * 4 bits, the last 4 bits are ignored
+     * This is a combination of 3 different parts in the packet, namely
+     * Resv (first 4 bits), S (next 1 bit) and QRV (last 3 bits),
+     * these are combined in one single byte
+     * See RFC 3376 section 4.1.(4-6). for more information
      */
-    uint8_t resv = 0;
-
-    /**
-     * When set to one, the S Flag indicates to any receiving multicast
-     * routers that they are to suppress the normal timer updates they
-     * perform upon hearing a Query. It does not, however, suppress the
-     * querier election or the normal "host-side" processing of a Query that
-     * a router may be required to perform as a consequence of itself being
-     * a group member.
-     * (RFC 3376 section 4.1.5)
-    * 1 bit, the last 7 bits are ignored
-     */
-    uint8_t s;
-
-    /**
-     * If non-zero, the QRV field contains the [Robustness Variable] value
-     * used by the querier, i.e., the sender of the Query. If the querier’s
-     * [Robustness Variable] exceeds 7, the maximum value of the QRV field,
-     * the QRV is set to zero. Routers adopt the QRV value from the most
-     * recently received Query as their own [Robustness Variable] value,
-     * unless that most recently received QRV was zero, in which case the
-     * receivers use the default [Robustness Variable] value specified in
-     * section 8.1 or a statically configured value.
-     * (RFC 3376 section 4.1.6)
-     * 3 bits, the last 5 bits are ignored
-     */
-    uint8_t QRV;
+    uint8_t special = 0;
 
     /**
      * The Querier’s Query Interval Code field specifies the [Query

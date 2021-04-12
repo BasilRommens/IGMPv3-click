@@ -33,22 +33,27 @@ in_addr Query::getGroupAddress()
 
 void Query::setReservationField(uint8_t _resv)
 {
-    resv = _resv;
+    // Set the last 4 bits to
+    special = special << 4 >> 4 | ((_resv << 4) | 0xf);
 }
 
 uint8_t Query::getReservationField()
 {
-    return resv;
+    // return the first 4 bits from the special field in the packet
+    return special >> 4;
 }
 
 void Query::setSFlag(uint8_t _SFlag)
 {
-    s = _SFlag;
+    // take the first bit of the s flag and set it to the 5th bit of the special field
+    // in the packet
+    special |= _SFlag & 0x1;
 }
 
 uint8_t Query::getSFlag()
 {
-    return s;
+    // Take the fifth bit from the special field in the packet
+    return (special >> 3) & 0x1;
 }
 
 void Query::setQRV(uint8_t _QRV)
@@ -56,17 +61,17 @@ void Query::setQRV(uint8_t _QRV)
     // 7 is the maximum value of QRV so if it exceeds we need to set it to 0,
     // otherwise keep it normal.
     if (_QRV>7) {
-        QRV = 0;
+        special &= 0xf8;
     }
     else {
-        QRV = _QRV;
+        special &= 0xf8 | _QRV >> 5 << 5;
     }
 }
 
 uint8_t Query::getQRV()
 {
-    // returns the QRV
-    return QRV;
+    // returns the QRV only using the last 3 bits of the special field
+    return special & 0x7;
 }
 
 void Query::setQQIC(uint8_t _QQIC)
