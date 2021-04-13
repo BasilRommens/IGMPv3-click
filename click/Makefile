@@ -145,7 +145,7 @@ elemlist elemlists: $(CLICK_BUILDTOOL)
 MKELEMMAPFLAGS =
 FINDELEMFLAGS = 
 $(ELEMENTMAP): $(CLICK_BUILDTOOL) $(srcdir)/click-mkelemmap always
-	echo $(DRIVERS)  analysis app aqm ethernet icmp ip simple standard tcpudp test threads $(EXTRA_PROVIDES) | $(CLICK_BUILDTOOL) findelem -r "$(PROVISIONS) $(DRIVERS)" -p $(top_srcdir) $(FINDELEMFLAGS) | $(PERL) $(top_srcdir)/click-mkelemmap -r "$(PROVISIONS)" -t "$(DRIVERS)" -p $(top_srcdir) -Iinclude -s "`cd $(top_srcdir) && pwd`" $(MKELEMMAPFLAGS) > $(ELEMENTMAP)
+	echo $(DRIVERS)  analysis app aqm ethernet etherswitch icmp ip local simple standard tcpudp test threads $(EXTRA_PROVIDES) | $(CLICK_BUILDTOOL) findelem -r "$(PROVISIONS) $(DRIVERS)" -p $(top_srcdir) $(FINDELEMFLAGS) | $(PERL) $(top_srcdir)/click-mkelemmap -r "$(PROVISIONS)" -t "$(DRIVERS)" -p $(top_srcdir) -Iinclude -s "`cd $(top_srcdir) && pwd`" $(MKELEMMAPFLAGS) > $(ELEMENTMAP)
 always:
 	@:
 
@@ -166,7 +166,7 @@ share/click/pkg-config.mk: $(srcdir)/share/click/pkg-config.mk.in config.status
 $(srcdir)/configure: $(srcdir)/configure.in $(srcdir)/m4/click.m4
 	cd $(srcdir) && $(AUTOCONF)
 config.status: $(srcdir)/configure
-	$(SHELL) $(srcdir)/configure 
+	$(SHELL) $(srcdir)/configure  '--disable-linuxmodule' '--enable-local' '--enable-etherswitch'
 Makefile: config.status $(srcdir)/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 config.h: stamp-h

@@ -1,6 +1,5 @@
 #include "query.hh"
 
-// TODO fix this piece of code
 int Query::getMaxResponseTime()
 {
     return codeToValue(maxRespCode);
@@ -133,6 +132,7 @@ Vector<uint8_t> Query::getEntirePacket()
     return nullptr
 }
 
+// TODO fix this piece of code
 int Query::codeToValue(int code)
 {
     if (code<128) {

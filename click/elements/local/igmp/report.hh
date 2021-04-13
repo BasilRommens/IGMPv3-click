@@ -1,10 +1,7 @@
-//
-// Created by arno on 05.04.21.
-//
-
 #ifndef TCSP_IGMPV3_REPORT_HH
 #define TCSP_IGMPV3_REPORT_HH
 
+#include <click/packet.hh>
 #include <click/vector.hh>
 
 struct GroupRecord;
@@ -76,7 +73,7 @@ struct GroupRecord {
      * More info can be found in rfc3376, 4.2.12
      */
     uint8_t record_type;
-    uint8_t getRecordType():
+    uint8_t getRecordType();
 
     /**
      * The Aux Data Len field contains the length of the Auxiliary Data
@@ -118,7 +115,8 @@ struct GroupRecord {
      * Data field are to be defined by any future version or extension of
      * IGMP that uses this field. (rfc3376, 4.2.10)
      */
-    void auxilary_data; (aux_data_len als aantal bits)
+     // TODO fix
+//    void auxilary_data; // (aux_data_len als aantal bits)
 
     /**
      * If the Packet Length field in the IP header of a received Report
@@ -129,7 +127,7 @@ struct GroupRecord {
      * Report, an IGMPv3 implementation MUST NOT include additional octets
      * beyond the last Group Record. (rfc3376, 4.2.11)
      */
-}
+};
 
 /**
  * Routers MUST accept a report with a source address of 0.0.0.0. (rfc3376, 4.2.13)
