@@ -53,6 +53,8 @@ struct Report {
      */
      Vector<GroupRecord> group_records; // length is num_group_records
 
+     void addGroupRecord(GroupRecord);
+
 };
 
 
@@ -74,6 +76,7 @@ struct GroupRecord {
      * More info can be found in rfc3376, 4.2.12
      */
     uint8_t record_type;
+    uint8_t getRecordType():
 
     /**
      * The Aux Data Len field contains the length of the Auxiliary Data
@@ -87,18 +90,22 @@ struct GroupRecord {
      * are present in this Group Record. (rfc3376, 4.2.7)
      */
     uint16_t num_sources;
+    uint16_t getNumSources();
 
     /**
      * The Multicast Address field contains the IP multicast address to
      * which this Group Record pertains. ((rfc3376, 4.2.8)
      */
     uint32_t multicast_address;
+    uint32_t getMulticastAddress();
 
     /**
      * The Source Address [i] fields are a vector of n IP unicast addresses,
      * where n is the value in this record’s Number of Sources (N) field. ((rfc3376, 4.2.9)
      */
     Vector<uint32_t> source_adresses;
+    Vector<uint32_t> getSourceAdresses();
+    void add_source(uint32_t source);
 
     /**
      * The Auxiliary Data field, if present, contains additional information
@@ -141,7 +148,3 @@ struct GroupRecord {
  */
 
 #endif //TCSP_IGMPV3_REPORT_HH
-
-
-
-
