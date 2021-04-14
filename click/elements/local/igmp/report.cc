@@ -9,7 +9,7 @@ uint8_t GroupRecord::getRecordType()
 
 uint16_t GroupRecord::getNumSources()
 {
-    return num_sources;
+    return ntohs(num_sources);
 }
 
 in_addr GroupRecord::getMulticastAddress()
@@ -25,13 +25,13 @@ Vector<in_addr> GroupRecord::getSourceAdresses()
 void Report::addGroupRecord(GroupRecord record)
 {
     group_records.push_back(record);
-    num_group_records += 1;
+    num_group_records += htons(ntohs(num_group_records) + 1);
 }
 
 void GroupRecord::add_source(in_addr source)
 {
     source_adresses.push_back(source);
-    num_sources += 1;
+    num_sources = htons(ntohs(num_sources) + 1);
 }
 
 CLICK_ENDDECLS
