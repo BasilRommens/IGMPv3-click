@@ -4,57 +4,6 @@
 #include <click/packet.hh>
 #include <click/vector.hh>
 
-struct GroupRecord;
-
-/**
- * Version 3 Membership Reports are sent by IP systems to report (to
- *  neighboring routers) the current multicast reception state, or
- *  changes in the multicast reception state, of their interfaces. (rfc3376, 4.2)
- */
-struct Report {
-    /**
-     * Type for a report is always 0x22
-     */
-    uint8_t type = 0x22;
-
-    /**
-     * The Reserved fields are set to zero on transmission, and ignored on
-     * reception. (rfc3376, 4.2.1)
-     */
-    uint8_t reserved1 = 0x0;
-
-    /**
-     * The Checksum is the 16-bit one’s complement of the one’s complement
-     * sum of the whole IGMP message (the entire IP payload). For computing
-     * the checksum, the Checksum field is set to zero. When receiving
-     * packets, the checksum MUST be verified before processing a message. (rfc3376, 4.2.2)
-     */
-    uint16_t checksum;
-
-    /**
-     * The Reserved fields are set to zero on transmission, and ignored on
-     * reception. (rfc3376, 4.2.1)
-     */
-    uint16_t reserved2 = 0x0;
-
-    /**
-     * The Number of Group Records (M) field specifies how many Group
-     * Records are present in this Report. (rfc3376, 4.2.3)
-     */
-    uint16_t num_group_records;
-
-    /**
-     * Each Group Record is a block of fields containing information
-     * pertaining to the sender’s membership in a single multicast group on
-     * the interface from which the Report is sent. (rfc3376, 4.2.4)
-     */
-     Vector<GroupRecord> group_records; // length is num_group_records
-
-     void addGroupRecord(GroupRecord);
-
-};
-
-
 /**
  * Each Group Record is a block of fields containing information
  * pertaining to the sender’s membership in a single multicast group on
@@ -115,7 +64,7 @@ struct GroupRecord {
      * Data field are to be defined by any future version or extension of
      * IGMP that uses this field. (rfc3376, 4.2.10)
      */
-     // TODO fix
+    // TODO fix
 //    void auxilary_data; // (aux_data_len als aantal bits)
 
     /**
@@ -128,6 +77,57 @@ struct GroupRecord {
      * beyond the last Group Record. (rfc3376, 4.2.11)
      */
 };
+
+/**
+ * Version 3 Membership Reports are sent by IP systems to report (to
+ *  neighboring routers) the current multicast reception state, or
+ *  changes in the multicast reception state, of their interfaces. (rfc3376, 4.2)
+ */
+struct Report {
+    /**
+     * Type for a report is always 0x22
+     */
+    uint8_t type = 0x22;
+
+    /**
+     * The Reserved fields are set to zero on transmission, and ignored on
+     * reception. (rfc3376, 4.2.1)
+     */
+    uint8_t reserved1 = 0x0;
+
+    /**
+     * The Checksum is the 16-bit one’s complement of the one’s complement
+     * sum of the whole IGMP message (the entire IP payload). For computing
+     * the checksum, the Checksum field is set to zero. When receiving
+     * packets, the checksum MUST be verified before processing a message. (rfc3376, 4.2.2)
+     */
+    uint16_t checksum;
+
+    /**
+     * The Reserved fields are set to zero on transmission, and ignored on
+     * reception. (rfc3376, 4.2.1)
+     */
+    uint16_t reserved2 = 0x0;
+
+    /**
+     * The Number of Group Records (M) field specifies how many Group
+     * Records are present in this Report. (rfc3376, 4.2.3)
+     */
+    uint16_t num_group_records;
+
+    /**
+     * Each Group Record is a block of fields containing information
+     * pertaining to the sender’s membership in a single multicast group on
+     * the interface from which the Report is sent. (rfc3376, 4.2.4)
+     */
+     Vector<GroupRecord> group_records; // length is num_group_records
+
+     void addGroupRecord(GroupRecord);
+
+};
+
+
+
 
 /**
  * Routers MUST accept a report with a source address of 0.0.0.0. (rfc3376, 4.2.13)
