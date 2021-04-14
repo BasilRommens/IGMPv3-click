@@ -11,6 +11,7 @@
 #include "report.cc"
 #include "query.hh"
 #include "IGMPPacketSource.hh"
+
 CLICK_DECLS
 
 IGMPPacketSource::IGMPPacketSource() { }
@@ -39,11 +40,13 @@ Packet* IGMPPacketSource::make_packet()
     }
 }
 
-Packet *IGMPPacketSource::make_query_packet() {
+Packet* IGMPPacketSource::make_query_packet()
+{
     return nullptr;
 }
 
-Packet *IGMPPacketSource::make_report_packet() {
+Packet* IGMPPacketSource::make_report_packet()
+{
     // Room for the IP header and Ether header which must be added later by
     //  another element
     int headroom = sizeof(click_ip)+sizeof(click_ether);
@@ -62,10 +65,14 @@ Packet *IGMPPacketSource::make_report_packet() {
     // htons is host to network server, to prevent problems with big and little
     //  endians
     report->type = 0x22;
+    GroupRecord group_record = GroupRecord();
+    group_record.record_type = htons(0x01);
+    group_record.add_source(in_addr());
 
-//    GroupRecord group_record = GroupRecord();
-//    group_record.record_type = htons(0x01);
-//     group_record.add_source("123.456.1.1") // TODO: String to uint32_t
+    report->addGroupRecord(group_record);
+    report->num_group_records = htons(report->num_group_records);
+
+//   group_record.add_source("123.456.1.1") // TODO: String to uint32_t
 
 //    report->addGroupRecord(group_record);
 
