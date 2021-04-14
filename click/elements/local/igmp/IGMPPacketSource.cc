@@ -7,15 +7,9 @@
 #include <click/packet_anno.hh>
 #include <click/timer.hh>
 
-
-
 #include "report.hh" // TODO: Is da path juist zo of moet daar iets voor?
 #include "report.cc"
 #include "IGMPPacketSource.hh"
-
-
-
-
 CLICK_DECLS
 
 IGMPPacketSource::IGMPPacketSource() { }

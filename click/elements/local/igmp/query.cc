@@ -1,5 +1,6 @@
 #include "query.hh"
 
+CLICK_DECLS
 int Query::getMaxResponseTime()
 {
     return codeToValue(maxRespCode);
@@ -147,3 +148,5 @@ int Query::codeToValue(int code)
         return (mant | 0x10) << (exp+3);
     }
 }
+
+CLICK_ENDDECLS
