@@ -93,15 +93,15 @@ struct GroupRecord {
      * The Multicast Address field contains the IP multicast address to
      * which this Group Record pertains. ((rfc3376, 4.2.8)
      */
-    uint32_t multicast_address;
-    uint32_t getMulticastAddress();
+    in_addr multicast_address;
+    in_addr getMulticastAddress();
 
     /**
      * The Source Address [i] fields are a vector of n IP unicast addresses,
      * where n is the value in this record’s Number of Sources (N) field. ((rfc3376, 4.2.9)
      */
-    Vector<uint32_t> source_adresses;
-    Vector<uint32_t> getSourceAdresses();
+    Vector<in_addr> source_adresses;
+    Vector<in_addr> getSourceAdresses();
     void add_source(uint32_t source);
 
     /**

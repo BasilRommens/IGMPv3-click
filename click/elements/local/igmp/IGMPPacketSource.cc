@@ -1,11 +1,12 @@
+#include <clicknet/ip.h> // Must be above everything else otherwise this wouldn't work
+#include <clicknet/ether.h>
 #include <click/timer.hh>
 #include <click/config.h>
-#include <click/args.hh>
+//#include <click/args.hh>
 #include <click/error.hh>
-#include <clicknet/tcp.h>
+#include <click/packet_anno.hh>
 #include "report.hh" // TODO: Is da path juist zo of moet daar iets voor?
 #include "IGMPPacketSource.hh"
-
 CLICK_DECLS
 
 IGMPPacketSource::IGMPPacketSource() { }
