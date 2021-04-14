@@ -122,6 +122,7 @@ struct Query {
 
     Vector<in_addr> getAllSourceAddresses();
 
+
 private:
     Vector<uint8_t> getEntirePacket();
     /**
