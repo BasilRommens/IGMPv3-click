@@ -61,13 +61,13 @@ Packet *IGMPPacketSource::make_report_packet() {
 
     // htons is host to network server, to prevent problems with big and little
     //  endians
-    report->type = htons(0x22);
+    report->type = 0x22;
 
-    GroupRecord group_record = GroupRecord();
-    group_record.record_type = htons(0x01);
-    // group_record.add_source("123.456.1.1") // TODO: String to uint32_t
+//    GroupRecord group_record = GroupRecord();
+//    group_record.record_type = htons(0x01);
+//     group_record.add_source("123.456.1.1") // TODO: String to uint32_t
 
-    report->addGroupRecord(group_record);
+//    report->addGroupRecord(group_record);
 
     // report->checksum = click_in_cksum((const unsigned char*) igmph, sizeof(Report))
 
