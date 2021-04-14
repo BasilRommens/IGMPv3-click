@@ -51,7 +51,7 @@ struct GroupRecord {
      */
     Vector<in_addr> source_adresses;
     Vector<in_addr> getSourceAdresses();
-    void add_source(uint32_t source);
+    void add_source(in_addr source);
 
     /**
      * The Auxiliary Data field, if present, contains additional information

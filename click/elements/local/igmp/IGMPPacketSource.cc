@@ -1,15 +1,19 @@
 #include <clicknet/ip.h> // Must be above everything else otherwise this wouldn't work
-#include <clicknet/ether.h>
 
 #include <click/config.h>
 #include <click/args.hh>
+#include <clicknet/ether.h>
 #include <click/error.hh>
 #include <click/packet_anno.hh>
+#include <click/timer.hh>
+
+
 
 #include "report.hh" // TODO: Is da path juist zo of moet daar iets voor?
+#include "report.cc"
 #include "IGMPPacketSource.hh"
 
-#include <click/timer.hh>
+
 
 CLICK_DECLS
 
@@ -34,6 +38,10 @@ Packet *IGMPPacketSource::make_packet() {
     } else {
         return make_query_packet();
     }
+}
+
+Packet *IGMPPacketSource::make_query_packet() {
+    return nullptr;
 }
 
 Packet *IGMPPacketSource::make_report_packet() {

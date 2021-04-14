@@ -4,15 +4,15 @@ uint8_t GroupRecord::getRecordType() {
     return record_type;
 }
 
-uint8_t GroupRecord::getNumSources() {
+uint16_t GroupRecord::getNumSources() {
     return num_sources;
 }
 
-uint32_t GroupRecord::getMulticastAddress() {
+in_addr GroupRecord::getMulticastAddress() {
     return multicast_address;
 }
 
-Vector<uint32_t> GroupRecord::getSourceAdresses() {
+Vector<in_addr> GroupRecord::getSourceAdresses() {
     return source_adresses;
 }
 
@@ -21,7 +21,7 @@ void Report::addGroupRecord(GroupRecord record) {
   num_group_records += 1;
 }
 
-void GroupRecord::add_source(uint32_t source) {
-  sources.push_back(source);
+void GroupRecord::add_source(in_addr source) {
+  source_adresses.push_back(source);
   num_sources += 1;
 }
