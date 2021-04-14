@@ -9,6 +9,7 @@
 
 #include "report.hh" // TODO: Is da path juist zo of moet daar iets voor?
 #include "report.cc"
+#include "query.hh"
 #include "IGMPPacketSource.hh"
 CLICK_DECLS
 

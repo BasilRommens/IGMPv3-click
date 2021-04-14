@@ -2,9 +2,7 @@
 
 CLICK_DECLS
 
-        uint8_t
-
-GroupRecord::getRecordType()
+uint8_t GroupRecord::getRecordType()
 {
     return record_type;
 }
