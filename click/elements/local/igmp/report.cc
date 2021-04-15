@@ -32,7 +32,7 @@ int GroupRecord::size()
     return default_size+source_address_size+auxiliary_size;
 }
 
-void Report::addGroupRecord(GroupRecord *record)
+void Report::addGroupRecord(GroupRecord* record)
 {
     group_records.push_back(record);
     num_group_records = htons(ntohs(num_group_records)+1);
@@ -51,7 +51,6 @@ WritablePacket* Report::createPacket()
     int headroom = sizeof(click_ip)+sizeof(click_ether);
 
     WritablePacket* q = Packet::make(headroom, 0, this->size(), 0);
-//    click_chatter("%d", this->size());
     if (!q) {
         return 0;
     }
@@ -80,7 +79,6 @@ WritablePacket* Report::createPacket()
         for (int j = 0; j<cur_group_record->getNumSources(); j++) {
             new_group_record->source_addresses[j] = cur_group_record->source_addresses[j];
         }
-        click_chatter("group_records %d", cur_group_record->size());
         // increase the record pointer and shift it by 4 bytes not 1
         record_ptr += cur_group_record->size()/4;
     }

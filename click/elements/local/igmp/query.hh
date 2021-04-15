@@ -78,25 +78,22 @@ struct Query {
      * (RFC 3376 section 4.1.9)
      * Vector of IP Addresses (32 bit each)
      */
-    Vector<in_addr> sourceAddress;
+    Vector<in_addr> sourceAddresses;
 
     int getMaxResponseTime();
 
     void setMaxRespCode(uint8_t);
 
-    void setCheckSum();
-
-    uint16_t getCheckSum();
-
     void setGroupAddress(in_addr);
 
     in_addr getGroupAddress();
 
-    void setReservationField(uint8_t);
+    void setReservationField(uint8_t = 0);
 
     uint8_t getReservationField();
 
-    void setSFlag();
+    void setSFlag(uint8_t);
+
 
     uint8_t getSFlag();
 
@@ -108,7 +105,7 @@ struct Query {
 
     uint8_t getQQI();
 
-    void setNumberOfSources(uint16_t);
+    void setNumberOfSources(int);
 
     uint16_t getNumberOfSources();
 
@@ -122,13 +119,25 @@ struct Query {
 
     Vector<in_addr> getAllSourceAddresses();
 
+    WritablePacket *createPacket();
 
+    int size();
 private:
-    Vector<uint8_t> getEntirePacket();
     /**
      * Converts a code to a value as described in RFC 3376 section 4.1.7. and 4.1.1.
      */
     int codeToValue(int code);
+};
+
+struct QueryPacket {
+    uint8_t type = 0x11;
+    uint8_t maxRespCode;
+    uint16_t checksum;
+    in_addr groupAddress;
+    uint8_t special = 0;
+    uint8_t QQIC;
+    uint16_t numberOfSources;
+    in_addr sourceAddresses[0];
 };
 
 #endif //TCSP_IGMPV3_QUERY_HH

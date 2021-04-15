@@ -140,7 +140,7 @@ struct ReportPacket {
     uint16_t checksum;
     uint16_t reserved2 = 0x0;
     uint16_t num_group_records;
-    GroupRecord group_records[0]; // length is num_group_records
+    GroupRecord group_records[0];
 };
 
 struct GroupRecordPacket {

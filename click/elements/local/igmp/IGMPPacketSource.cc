@@ -10,6 +10,7 @@
 #include "report.hh" // TODO: Is da path juist zo of moet daar iets voor?
 #include "report.cc"
 #include "query.hh"
+#include "query.cc"
 #include "IGMPPacketSource.hh"
 
 CLICK_DECLS
@@ -33,6 +34,7 @@ int IGMPPacketSource::configure(Vector<String>& conf, ErrorHandler* errh)
 Packet* IGMPPacketSource::make_packet()
 {
     if (generate_report) {
+        return make_query_packet();
         return make_report_packet();
     }
     else {
@@ -42,7 +44,26 @@ Packet* IGMPPacketSource::make_packet()
 
 Packet* IGMPPacketSource::make_query_packet()
 {
-    return nullptr;
+    // Cast the data to a report and set the attribute values
+    Query query = Query();
+
+    // htons is host to network short, to prevent problems with big and
+    // little endians
+    query.type = 0x11;
+
+    query.maxRespCode = 0x01;
+
+    query.groupAddress = IPAddress(htonl(0x0a)).in_addr();
+    query.numberOfSources = htons(0x00);
+    query.setQQIC(1);
+    query.setSFlag(1);
+    query.setQRV(3);
+    query.setReservationField(0xa);
+    // htonl, because it entails converting 32 bits
+    query.addSourceAddress(IPAddress(htonl(1)).in_addr());
+    query.addSourceAddress(IPAddress(htonl(2)).in_addr());
+
+    return query.createPacket();
 }
 
 Packet* IGMPPacketSource::make_report_packet()
