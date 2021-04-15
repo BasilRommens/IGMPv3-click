@@ -55,17 +55,25 @@ Packet* IGMPPacketSource::make_report_packet()
     report.type = 0x22;
     GroupRecord group_record = GroupRecord();
 
-    // TODO: For some reason is dit niet gelijk aan 0 in het pakket. Mijn gok is dat dit te maken gaat hebben met
-    //  mogelijke extra data die een vector bevat, buiten het element zelf
     group_record.aux_data_len = htons(0x01);
 
-    // TODO fix record type
     group_record.record_type = 0x01;
     group_record.num_sources = 0x00;
-    group_record.add_source(IPAddress(1).in_addr());
-    group_record.multicast_address = IPAddress(1).in_addr();
+    // htonl, because it entails converting 32 bits
+    group_record.add_source(IPAddress(htonl(1)).in_addr());
+    group_record.add_source(IPAddress(htonl(2)).in_addr());
+    group_record.multicast_address = IPAddress(htonl(1)).in_addr();
 
     report.addGroupRecord(&group_record);
+    GroupRecord group_record2 = GroupRecord();
+
+    group_record2.aux_data_len = htons(0x01);
+
+    group_record2.record_type = 0x01;
+    group_record2.num_sources = 0x00;
+    group_record2.add_source(IPAddress(htonl(1)).in_addr());
+    group_record2.multicast_address = IPAddress(htonl(1)).in_addr();
+    report.addGroupRecord(&group_record2);
 
     return report.createPacket();
 }

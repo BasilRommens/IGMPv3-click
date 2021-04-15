@@ -35,7 +35,7 @@ int GroupRecord::size()
 void Report::addGroupRecord(GroupRecord *record)
 {
     group_records.push_back(record);
-    num_group_records += htons(ntohs(num_group_records)+1);
+    num_group_records = htons(ntohs(num_group_records)+1);
 }
 
 void GroupRecord::add_source(in_addr source)
@@ -51,6 +51,7 @@ WritablePacket* Report::createPacket()
     int headroom = sizeof(click_ip)+sizeof(click_ether);
 
     WritablePacket* q = Packet::make(headroom, 0, this->size(), 0);
+//    click_chatter("%d", this->size());
     if (!q) {
         return 0;
     }
@@ -69,7 +70,6 @@ WritablePacket* Report::createPacket()
     uint32_t* record_ptr = reinterpret_cast<uint32_t*>(&report->group_records);
 
     for (int i = 0; i<htons(num_group_records); i++) {
-//        click_chatter("yeet");
         GroupRecord* cur_group_record = group_records[i];
         GroupRecordPacket* new_group_record = (GroupRecordPacket*) (record_ptr);
 
@@ -93,7 +93,7 @@ int Report::size()
     int default_size = 8;
     int group_record_size = 0;
     for (int i = 0; i<group_records.size(); i++) {
-        group_record_size = group_records[i]->size();
+        group_record_size += group_records[i]->size();
     }
     return default_size+group_record_size;
 }
