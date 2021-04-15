@@ -12,3 +12,12 @@
  * sockets have differing filter modes and/or source lists for the
  * same multicast address and interface. (rfc3376, 3.2)
 */
+
+struct InterfaceRecord {
+    auto multicast_address;
+    auto filter_mode;
+    auto source_list;
+};
+class SocketMulticastTable {
+    Vector<SocketRecord> records;
+};

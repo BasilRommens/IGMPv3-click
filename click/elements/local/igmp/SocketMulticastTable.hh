@@ -19,3 +19,50 @@
  *   present, a new entry is created, using the parameters specified in
  *   the request. (rfc3376, 3.1)
 */
+
+class SocketRecord {
+    in_addr interface; // TODO: correct type?
+    in_addr multicast_address;
+    int filter_mode; // TODO: correct type?
+    Vector<in_addr> source_list;
+
+    SocketRecord(in_addr interface_init){
+        interface = interface_init;
+    }
+
+    bool is_include() {
+        return False; // TODO
+    }
+};
+class SocketMulticastTable {
+    Vector<SocketRecord*> records;
+    void addRecord(SocketRecord* requested);
+    int get_index(in_addr interface) {
+        // Returnt -1 als er geen entry voor de gegeven interface inzit, anders de index
+        int index = -1;
+        for (int i = 0; i < records.length(); i++) {
+            if (records[i]->interface == interface){
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
+
+    void delete_if_exists(in_addr interface) {
+        int index = get_index(interface);
+        if (index >= 0){
+            records.erase(index);
+        }
+    }
+
+    int get_index_or_create(in_addr interface){
+        int index = get_index(requested.interface());
+        if (index == -1) {
+            SocketRecord* record = new SocketRecord(requested.interface);
+            records.push_back(record);
+            index = records.length() - 1;
+        }
+        return index;
+    }
+};

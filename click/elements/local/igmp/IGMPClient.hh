@@ -59,3 +59,9 @@
  * have been completed, each such additional change triggers the
  * immediate transmission of a new State-Change Report.
 */
+
+/**
+* Een client kan een join en een leave doen. (opgave, 3.5)
+*/
+
+// handle join -> Send report
