@@ -58,26 +58,23 @@ Packet *IGMPPacketSource::make_report_packet() {
     Report *report = (Report *) (q->data());
 
     // htons is host to network server, to prevent problems with big and little
-    //  endians
+    // endians
     report->type = 0x22;
     GroupRecord group_record = GroupRecord();
 
     // TODO: For some reason is dit niet gelijk aan 0 in het pakket. Mijn gok is dat dit te maken gaat hebben met
     //  mogelijke extra data die een vector bevat, buiten het element zelf
-    group_record.aux_data_len = htons(0);
+    group_record.aux_data_len = htons(0x01);
 
+    // TODO fix record type
     group_record.record_type = htons(0x01);
-    click_chatter("Voor: %d", group_record.getNumSources());
+//    click_chatter("%d", sizeof(struct Report));
+//    click_chatter("Voor: %d", group_record.getNumSources());
     group_record.add_source(in_addr());
-    click_chatter("Na: %d", group_record.getNumSources());
-
+//    click_chatter("Na: %d", group_record.getNumSources());
+    group_record.multicast_address = in_addr();
 
     report->addGroupRecord(group_record);
-//    report->num_group_records = htons(report->num_group_records);
-
-//   group_record.add_source("123.456.1.1") // TODO: String to uint32_t
-
-//    report->addGroupRecord(group_record);
 
     report->checksum = click_in_cksum(q->data(), q->length());
 
@@ -87,7 +84,7 @@ Packet *IGMPPacketSource::make_report_packet() {
 void IGMPPacketSource::run_timer(Timer *timer) {
     if (Packet * q = make_packet()) {
         Report* r = (Report *) q->data();
-        click_chatter("Final: %d", r->group_records[0].getNumSources());
+//        click_chatter("Final: %d", r->group_records[0].getNumSources());
         output(0).push(q);
         timer->reschedule_after_msec(1000);
     }

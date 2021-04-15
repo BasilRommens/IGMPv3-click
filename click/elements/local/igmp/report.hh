@@ -10,7 +10,6 @@
  * the interface from which the Report is sent. (rfc3376, 4.2.4)
  */
 struct GroupRecord {
-
     /**
      * One of those:
      * "Current-State Record"
@@ -22,6 +21,7 @@ struct GroupRecord {
      * More info can be found in rfc3376, 4.2.12
      */
     uint8_t record_type;
+
     uint8_t getRecordType();
 
     /**
@@ -36,6 +36,7 @@ struct GroupRecord {
      * are present in this Group Record. (rfc3376, 4.2.7)
      */
     uint16_t num_sources;
+
     uint16_t getNumSources();
 
     /**
@@ -43,14 +44,17 @@ struct GroupRecord {
      * which this Group Record pertains. ((rfc3376, 4.2.8)
      */
     in_addr multicast_address;
+
     in_addr getMulticastAddress();
 
     /**
      * The Source Address [i] fields are a vector of n IP unicast addresses,
      * where n is the value in this record’s Number of Sources (N) field. ((rfc3376, 4.2.9)
      */
-    Vector<in_addr> source_adresses;
-    Vector<in_addr> getSourceAdresses();
+    Vector<in_addr> source_addresses;
+
+    Vector<in_addr> getSourceAddresses();
+
     void add_source(in_addr source);
 
     /**
@@ -67,6 +71,7 @@ struct GroupRecord {
     // TODO fix
 //    void auxilary_data; // (aux_data_len als aantal bits)
 
+    int size();
     /**
      * If the Packet Length field in the IP header of a received Report
      * indicates that there are additional octets of data present, beyond
@@ -120,10 +125,13 @@ struct Report {
      * pertaining to the sender’s membership in a single multicast group on
      * the interface from which the Report is sent. (rfc3376, 4.2.4)
      */
-     Vector<GroupRecord> group_records; // length is num_group_records
+    Vector<GroupRecord> group_records; // length is num_group_records
 
-     void addGroupRecord(GroupRecord);
+    void addGroupRecord(GroupRecord);
 
+    int size();
+
+    WritablePacket* createPacket();
 };
 
 
