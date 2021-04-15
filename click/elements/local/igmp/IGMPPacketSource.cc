@@ -50,8 +50,8 @@ Packet* IGMPPacketSource::make_report_packet()
     // Cast the data to a report and set the attribute values
     Report report = Report();
 
-    // htons is host to network server, to prevent problems with big and little
-    // endians
+    // htons is host to network short, to prevent problems with big and
+    // little endians
     report.type = 0x22;
     GroupRecord group_record = GroupRecord();
 
@@ -62,7 +62,7 @@ Packet* IGMPPacketSource::make_report_packet()
     // htonl, because it entails converting 32 bits
     group_record.add_source(IPAddress(htonl(1)).in_addr());
     group_record.add_source(IPAddress(htonl(2)).in_addr());
-    group_record.multicast_address = IPAddress(htonl(1)).in_addr();
+    group_record.multicast_address = IPAddress(htonl(0x0a)).in_addr();
 
     report.addGroupRecord(&group_record);
     GroupRecord group_record2 = GroupRecord();
@@ -71,8 +71,8 @@ Packet* IGMPPacketSource::make_report_packet()
 
     group_record2.record_type = 0x01;
     group_record2.num_sources = 0x00;
-    group_record2.add_source(IPAddress(htonl(1)).in_addr());
-    group_record2.multicast_address = IPAddress(htonl(1)).in_addr();
+    group_record2.add_source(IPAddress(htonl(3)).in_addr());
+    group_record2.multicast_address = IPAddress(htonl(0x0b)).in_addr();
     report.addGroupRecord(&group_record2);
 
     return report.createPacket();

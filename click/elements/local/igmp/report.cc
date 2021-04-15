@@ -80,8 +80,9 @@ WritablePacket* Report::createPacket()
         for (int j = 0; j<cur_group_record->getNumSources(); j++) {
             new_group_record->source_addresses[j] = cur_group_record->source_addresses[j];
         }
-        // increase the record pointer
-        record_ptr += cur_group_record->size();
+        click_chatter("group_records %d", cur_group_record->size());
+        // increase the record pointer and shift it by 4 bytes not 1
+        record_ptr += cur_group_record->size()/4;
     }
 
     report->checksum = click_in_cksum(q->data(), q->length());
