@@ -11,16 +11,6 @@ void Query::setMaxRespCode(uint8_t _maxRespCode)
     maxRespCode = _maxRespCode;
 }
 
-void Query::setCheckSum()
-{
-    // TODO calculate checksum
-}
-
-uint8_t Query::getCheckSum()
-{
-    return checksum;
-}
-
 void Query::setGroupAddress(in_addr _groupAddress)
 {
     groupAddress = _groupAddress;
@@ -34,7 +24,7 @@ in_addr Query::getGroupAddress()
 void Query::setReservationField(uint8_t _resv)
 {
     // Set the last 4 bits to
-    special = special << 4 >> 4 | ((_resv << 4) | 0xf);
+    special = (special << 4 >> 4) | ((_resv << 4) | 0xf0);
 }
 
 uint8_t Query::getReservationField()
@@ -47,7 +37,9 @@ void Query::setSFlag(uint8_t _SFlag)
 {
     // take the first bit of the s flag and set it to the 5th bit of the special field
     // in the packet
-    special |= _SFlag & 0x1;
+    click_chatter("%d", special & 0xf7);
+    special = special & 0xf7 | _SFlag << 3;
+    click_chatter("%d", special);
 }
 
 uint8_t Query::getSFlag()
@@ -64,7 +56,7 @@ void Query::setQRV(uint8_t _QRV)
         special &= 0xf8;
     }
     else {
-        special &= 0xf8 | _QRV >> 5 << 5;
+        special = special & 0xf8 | _QRV;
     }
 }
 
@@ -76,7 +68,7 @@ uint8_t Query::getQRV()
 
 void Query::setQQIC(uint8_t _QQIC)
 {
-    QQIC = _QQIC
+    QQIC = _QQIC;
 }
 
 uint8_t Query::getQQI()
@@ -97,13 +89,13 @@ uint16_t Query::getNumberOfSources()
     return numberOfSources;
 }
 
-void Query::addSourceAddress(in_addr _sourceAddress)
+void Query::addSourceAddress(in_addr _sourceAddresses)
 {
     // Do not exceed 366 number of sources, add if possible +
     // increase number of sources
     if (numberOfSources<366) {
-        sourceAddress.push_back(_sourceAddress);
-        numberOfSources += 1;
+        sourceAddresses.push_back(_sourceAddresses);
+        numberOfSources = ntohs(ntohs(numberOfSources)+1);
     }
 }
 
@@ -114,23 +106,17 @@ void Query::removeSourceAddress(in_addr)
 
 void Query::removeAllSourceAddress()
 {
-    sourceAddress.clear();
+    sourceAddresses.clear();
 }
 
 in_addr Query::getSourceAddress(uint16_t addressLocation)
 {
-    return sourceAddress[addressLocation]
+    return sourceAddresses[addressLocation];
 }
 
 Vector<in_addr> Query::getAllSourceAddresses()
 {
-    return sourceAddress;
-}
-
-Vector<uint8_t> Query::getEntirePacket()
-{
-    // TODO generate entire packet
-    return nullptr
+    return sourceAddresses;
 }
 
 // TODO fix this piece of code
@@ -147,6 +133,44 @@ int Query::codeToValue(int code)
         uint8_t mant = code & 0xF;
         return (mant | 0x10) << (exp+3);
     }
+}
+
+int Query::size()
+{
+    int default_size = 12;
+    int source_address_size = sourceAddresses.size()*4;
+    return default_size+source_address_size;
+}
+
+WritablePacket* Query::createPacket()
+{
+    // Room for the IP header and Ether header which must be added later by
+    //  another element
+    int headroom = sizeof(click_ip)+sizeof(click_ether);
+
+    WritablePacket* q = Packet::make(headroom, 0, this->size(), 0);
+    if (!q) {
+        return 0;
+    }
+
+    // Make packet data 0 to prevent weird problems
+    memset(q->data(), '\0', q->length());
+
+    // Cast the data to a report and set the attribute values
+    QueryPacket* query = (QueryPacket*) (q->data());
+    query->type = type;
+    query->maxRespCode = maxRespCode;
+    query->groupAddress = groupAddress;
+    query->special = special;
+    query->QQIC = QQIC;
+    query->numberOfSources = numberOfSources;
+
+    for (int i = 0; i<htons(numberOfSources); i++) {
+        query->sourceAddresses[i] = sourceAddresses[i];
+    }
+
+    query->checksum = click_in_cksum(q->data(), q->length());
+    return q;
 }
 
 CLICK_ENDDECLS

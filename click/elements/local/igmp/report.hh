@@ -125,16 +125,31 @@ struct Report {
      * pertaining to the sender’s membership in a single multicast group on
      * the interface from which the Report is sent. (rfc3376, 4.2.4)
      */
-    Vector<GroupRecord> group_records; // length is num_group_records
+    Vector<GroupRecord *> group_records; // length is num_group_records
 
-    void addGroupRecord(GroupRecord);
+    void addGroupRecord(GroupRecord*);
 
     int size();
 
     WritablePacket* createPacket();
 };
 
+struct ReportPacket {
+    uint8_t type = 0x22;
+    uint8_t reserved1 = 0x0;
+    uint16_t checksum;
+    uint16_t reserved2 = 0x0;
+    uint16_t num_group_records;
+    GroupRecord group_records[0];
+};
 
+struct GroupRecordPacket {
+    uint8_t record_type;
+    uint8_t aux_data_len = 0;
+    uint16_t num_sources;
+    in_addr multicast_address;
+    in_addr source_addresses[0];
+};
 
 
 /**
