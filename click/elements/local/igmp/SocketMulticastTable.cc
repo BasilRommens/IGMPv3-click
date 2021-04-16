@@ -1,7 +1,7 @@
 #include "SocketMulticastTable.hh"
 
 void SocketMulticastTable::addRecord(SocketRecord* requested) {
-    // WARNING: DIT IS ALLEMAAL NOG PSEUDOCODE (aka werkende code die ik nog niet getest heb)
+    // WARNING: DIT IS ALLEMAAL NOG PSEUDOCODE (aka misschien werkende code die ik nog niet getest heb)
 
     /* If the requested filter mode is INCLUDE *and* the requested source
      * list is empty, then the entry corresponding to the requested
@@ -20,11 +20,38 @@ void SocketMulticastTable::addRecord(SocketRecord* requested) {
      * the request.
      */
     if (requested->is_exclude() or !requested->source_list.empty()){
-
-        index = get_index_or_create(interface);
+        index = get_index_or_create(requested->interface, requested->multicast_address);
         SocketRecord* record = records[index];
         record->filter_mode = requested->filtermode;
         record->source_list = requested->source_list;
-
     }
+}
+
+int SocketMulticastTable::get_index(in_addr interface, in_addr multicast_address) {
+    // Returnt -1 als er geen entry voor de gegeven interface inzit, anders de index
+    int index = -1;
+    for (int i = 0; i < records.length(); i++) {
+        if (records[i]->interface == interface && records[i]->multicast_address == multicast_address){
+            index = i;
+            break;
+        }
+    }
+    return index;
+}
+
+void SocketMulticastTable::delete_if_exists(in_addr interface, in_addr multicast_address) {
+    int index = get_index(interface, multicast_address);
+    if (index >= 0){
+        records.erase(index);
+    }
+}
+
+int SocketMulticastTable::get_index_or_create(in_addr interface, in_addr multicast_address){
+    int index = get_index(interface, multicast_address);
+    if (index == -1) {
+        SocketRecord* record = new SocketRecord(interface);
+        records.push_back(record);
+        index = records.length() - 1;
+    }
+    return index;
 }

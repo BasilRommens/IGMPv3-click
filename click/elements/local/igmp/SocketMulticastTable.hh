@@ -31,38 +31,19 @@ class SocketRecord {
     }
 
     bool is_include() {
-        return False; // TODO
+        return false; // TODO
+    }
+
+    bool is_exclude() {
+        return !is_include(); // TODO
     }
 };
 class SocketMulticastTable {
     Vector<SocketRecord*> records;
     void addRecord(SocketRecord* requested);
-    int get_index(in_addr interface) {
-        // Returnt -1 als er geen entry voor de gegeven interface inzit, anders de index
-        int index = -1;
-        for (int i = 0; i < records.length(); i++) {
-            if (records[i]->interface == interface){
-                index = i;
-                break;
-            }
-        }
-        return index;
-    }
+    int get_index(in_addr interface, in_addr multicast_address);
 
-    void delete_if_exists(in_addr interface) {
-        int index = get_index(interface);
-        if (index >= 0){
-            records.erase(index);
-        }
-    }
+    void delete_if_exists(in_addr interface, in_addr multicast_address);
 
-    int get_index_or_create(in_addr interface){
-        int index = get_index(requested.interface());
-        if (index == -1) {
-            SocketRecord* record = new SocketRecord(requested.interface);
-            records.push_back(record);
-            index = records.length() - 1;
-        }
-        return index;
-    }
+    int get_index_or_create(in_addr interface, in_addr multicast_address);
 };
