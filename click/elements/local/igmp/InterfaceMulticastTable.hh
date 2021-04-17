@@ -23,74 +23,65 @@ struct InterfaceRecord {
 class InterfaceMulticastTable {
     Vector <InterfaceRecord> records;
 
-    void addToMapVector(Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs, SocketRecord *record) {
-        auto key = Pair<in_addr, in_addr>(record.multicast_address);
-        if (!containsPair(multicast_pairs, key)) {
-            multicast_pairs[key] = Vector({record});
-        } else {
-            multicast_pairs[key].push_back(record);
-        }
-    }
+    /**
+     * Appends the SocketRecord to the list corresponding to the (interface, multicast_adress) pair in the map
+     * @param multicast_pairs (interface, multicast_address) pair
+     * @param record Recrod to include at the position
+     */
+    void addToMapVector(Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs, SocketRecord *record);
 
-    Pair<Vector<SocketRecord*>, Vector<SocketRecord*>> splitIncludeExclude(Vector<SocketRecord*> records){
-        // First item are all include records, second all exclude records
-        Vector<SocketRecord*> includes;
-        Vector<SocketRecord*> excludes;
-        for (auto record: records){
-            if (record->is_include()){
-                includes.push_back(record);
-            }
-            if (record->is_exclude()){
-                excludes.push_back(record);
-            }
-        }
-        return Pair<Vector<SocketRecord*>, Vector<SocketRecord*>>(includes, excludes);
-    }
+    /**
+     * Returns two seperate vector, one with the records with filter mode include, the other with the records with
+     * filter mode exclude.
+     * @param records List of all records that must be splitted
+     * @return The given records splitted based on thair filter mode. First are the includes, second the excludes.
+     */
+    Pair <Vector<SocketRecord *>, Vector<SocketRecord *>> splitIncludeExclude(Vector<SocketRecord *> records);
 
-    auto sourceListContainsExclude(){
+    /**
+     * Updates the interface records, based on a SocketMulticastTable
+     * @param table Table containing the socket records
+     */
+    void update(SocketMulticastTable table);
 
-    }
+    /**
+     * Given vector A and vector B, this returns a new vector A-B, which is the vector A with all elements that are in
+     * B removed.
+     * @param vec_a vector A
+     * @param vec_b vector B
+     * @return vector A-B
+     */
+    Vector <in_addr> vector_minus(Vector <in_addr> vec_a, Vector <in_addr> vec_b);
 
-    void update(SocketMulticastTable table) {
-        // Get all (interface, multicast_address) pairs
-        Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs; // rfc p.6
-        for (SocketRecord *record: table.records) {
-            addToMapVector(multicast_pairs, record)
-        }
+    /**
+     * Given a list of vectors, this returns the union of all these vectors.
+     * @param vectors List of vectors of socketrecords that must be unioned
+     * @return The union of all given vectors
+     */
+    Vector<SocketRecord *> vector_union(Vector<Vector<SocketRecord *>> vectors);
 
-        // Update interface table per pair
-        for (auto const &x : multicast_pairs) {
-            Pair<in_addr, in_addr> key = x.first;
-            Vector<SocketRecord*> all_records = x.second;
+    /**
+     * Given a vector of socketRecord, return a vector containing all their source_lists
+     * @param records A vector containing all SocketRecords
+     * @return The source_lists corresponding to the SocketRecords
+     */
+    Vector <Vector<in_addr>> get_source_lists_union(Vector<SocketRecord *> records);
 
-            auto in_ex_splitted = splitIncludeExclude(all_records);
-            Vector<SocketRecord*> includes = in_ex_splitted.first;
-            Vector<SocketRecord*> excludes = in_ex_splitted.second;
+    /**
+     * Given a Map and an identifier pair (interface, multicast_address), determine whether the pair already exists in
+     * the map.
+     * @param map A Map which maps an (interface, multicast_address) pair onto a vector of SocketRecords
+     * @param key Identifier pair (interface, multicast_address) of which you want to check whether it's in the map
+     * @return wether the pair is in the map
+     */
+    bool containsPair(Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> &map, Pair <in_addr, in_addr> key);
 
-            if (!excludes.empty()) {
-                // Contains an exclude
-                filter_mode = EXCLUDE;
-                source_list = vector_union(get_source_lists(excludes));
-                source_list = vector_minus(source_list, get_source_lists(includes));
-            } else {
-                // All includes
-                filter_mode = INCLUDE;
-                source_list = vector_union(get_source_lists(includes));
-            }
-        }
-    }
+    /**
+     * Check if a vector contains a given value
+     * @param vector The vector to check
+     * @param value The value to check
+     * @return True if the vector contains the value
+     */
+    bool contains(Vector <in_addr> vector, in_addr value);
+
 };
-
-bool containsPair(
-<Pair<in_addr, in_addr>, Vector<SocketRecord *>> &map, Pair<in_addr, in_addr>
-key) {
-// src: https://stackoverflow.com/questions/3136520/determine-if-map-contains-a-value-for-a-key
-if (map.
-find(key)
-== map.
-
-end()
-
-) return false;
-return true;
-}
