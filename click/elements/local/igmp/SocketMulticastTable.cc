@@ -1,5 +1,6 @@
 #include "SocketMulticastTable.hh"
 
+
 void SocketMulticastTable::addRecord(SocketRecord* requested) {
     // WARNING: DIT IS ALLEMAAL NOG PSEUDOCODE (aka misschien werkende code die ik nog niet getest heb)
 
@@ -9,7 +10,7 @@ void SocketMulticastTable::addRecord(SocketRecord* requested) {
      * entry is present, the request is ignored.
      */
     if (requested->is_include() && requested->source_list.empty()){
-        delete_if_exists(requested->interface);
+        delete_if_exists(requested->interface, requested->multicast_address);
     }
 
     /* If the requested filter mode is EXCLUDE *or* the requested source
@@ -20,7 +21,7 @@ void SocketMulticastTable::addRecord(SocketRecord* requested) {
      * the request.
      */
     if (requested->is_exclude() or !requested->source_list.empty()){
-        index = get_index_or_create(requested->interface, requested->multicast_address);
+        int index = get_index_or_create(requested->interface, requested->multicast_address);
         SocketRecord* record = records[index];
         record->filter_mode = requested->filter_mode;
         record->source_list = requested->source_list;
@@ -45,6 +46,7 @@ void SocketMulticastTable::delete_if_exists(in_addr interface, in_addr multicast
         records.erase(records.begin() + index);
     }
 }
+
 
 int SocketMulticastTable::get_index_or_create(in_addr interface, in_addr multicast_address){
     int index = get_index(interface, multicast_address);

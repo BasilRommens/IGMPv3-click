@@ -20,15 +20,23 @@
  *   the request. (rfc3376, 3.1)
 */
 
+#ifndef CLICK_SocketMulticastTable_HH
+#define CLICK_SocketMulticastTable_HH
+
 class SocketRecord {
 public:
-    in_addr interface; // TODO: correct type?
+    in_addr interface; // TODO: correct type?, wordt al bijgehouden in interface, dus mss enkel socket bijhouden en interface niet?
     in_addr multicast_address;
     int filter_mode; // rfc p. 16: 1 if include, 2 if exclude
-    Vector<in_addr> source_list;
+    Vector <in_addr> source_list;
 
-    SocketRecord(in_addr interface_init){
+    SocketRecord(in_addr interface_init) {
         interface = interface_init;
+    }
+
+    SocketRecord(in_addr interface, in_addr multicast_address, int filter_mode, Vector <in_addr> source_list)
+            : interface(interface), multicast_address(multicast_address), filter_mode(filter_mode),
+              source_list(source_list) {
     }
 
     bool is_include() {
@@ -43,13 +51,18 @@ public:
 class SocketMulticastTable {
     // Update for each socket on which IPMulticastListen has been invoked
     // Must be kept per socket -> Maybe use a map instead? Or keep it as attribute in interface?
+public:
+    Vector<SocketRecord *> records;
 
-    Vector<SocketRecord*> records;
     void addRecord(SocketRecord* requested);
+
     int get_index(in_addr interface, in_addr multicast_address);
 
     void delete_if_exists(in_addr interface, in_addr multicast_address);
 
     int get_index_or_create(in_addr interface, in_addr multicast_address);
 };
+
+#endif
+
 

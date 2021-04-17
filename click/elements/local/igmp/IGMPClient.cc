@@ -9,6 +9,9 @@
 
 #include "IGMPClient.hh"
 
+#include "SocketMulticastTable.cc"
+#include "InterfaceMulticastTable.cc"
+
 CLICK_DECLS
 
 IGMPClient::IGMPClient() {}
@@ -25,6 +28,13 @@ void IGMPClient::push(int port, Packet *p) {
 }
 
 
+void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
+                                   Vector <in_addr> source_list) {
+    SocketRecord* socketRecord = new SocketRecord(interface, multicast_address, filter_mode, source_list);
+    socketMulticastTable->addRecord(socketRecord);
+    interfaceMulticastTable->update(socketMulticastTable);
+}
+
 int join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
     // Moet een record gaan sturen met de nieuwe info en dit updaten in zijn eigen socketMulticastTable
     // Code copy pasta van click coding slides
@@ -40,9 +50,9 @@ int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh
     return 0;
 }
 
-void IGMPClient::add_handlers(){
-    add_write_handler("join_handle", &join_handle, (void *)0);
-    add_write_handler("leave_handle", &leave_handle, (void *)0);
+void IGMPClient::add_handlers() {
+    add_write_handler("join_handle", &join_handle, (void *) 0);
+    add_write_handler("leave_handle", &leave_handle, (void *) 0);
 }
 
 CLICK_ENDDECLS

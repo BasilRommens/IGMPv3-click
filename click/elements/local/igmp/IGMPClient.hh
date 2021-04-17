@@ -71,7 +71,8 @@
 
 #include <click/element.hh>
 #include <click/ipaddress.hh>
-#include "SocketMulticastTable.cc"
+#include "SocketMulticastTable.hh"
+#include "InterfaceMulticastTable.hh"
 
 CLICK_DECLS
 //
@@ -91,13 +92,14 @@ public:
 
     void push(int port, Packet *p);
 
-
+    void IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
 
     void add_handlers();
 
 
 private:
     SocketMulticastTable *socketMulticastTable;
+    InterfaceMulticastTable *interfaceMulticastTable;
     in_addr identifier;
 };
 

@@ -1,18 +1,19 @@
 #include "InterfaceMulticastTable.hh"
 #include "constants.hh"
 
-InterfaceRecord::InterfaceRecord(in_addr multicast_address, int filter_mode, Vector<in_addr> source_list) :
-multicast_address(multicast_address), filter_mode(filter_mode), source_list(source_list){
+InterfaceRecord::InterfaceRecord(in_addr multicast_address, int filter_mode, Vector <in_addr> source_list) :
+        multicast_address(multicast_address), filter_mode(filter_mode), source_list(source_list) {
 
 }
-void InterfaceMulticastTable::addToMapVector(Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs,
+
+void InterfaceMulticastTable::addToMapVector(HashMap <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs,
                                              SocketRecord *record) {
-    auto key = Pair<in_addr, in_addr>(record.multicast_address);
+    auto key = Pair<in_addr, in_addr>(record->interface, record->multicast_address);
     if (!containsPair(multicast_pairs, key)) {
-        multicast_pairs[key] = Vector({record});
-    } else {
-        multicast_pairs[key].push_back(record);
+        multicast_pairs[key] = Vector<SocketRecord *>();
     }
+    multicast_pairs[key].push_back(record);
+
 }
 
 Pair <Vector<SocketRecord *>, Vector<SocketRecord *>>
@@ -32,14 +33,15 @@ InterfaceMulticastTable::splitIncludeExclude(Vector<SocketRecord *> records) {
 }
 
 
-void InterfaceMulticastTable::update(SocketMulticastTable table) {
+void InterfaceMulticastTable::update(SocketMulticastTable *table) {
     // Get all (interface, multicast_address) pairs
-    Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs; // rfc p.6
-    for (SocketRecord *record: table.records) {
-        addToMapVector(multicast_pairs, record)
+    HashMap <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs; // rfc p.6
+    for (SocketRecord *record: table->records) {
+        addToMapVector(multicast_pairs, record);
     }
 
     // Update interface table per pair
+    records = Vector<InterfaceRecord *>();
     for (auto const &x : multicast_pairs) {
         Pair <in_addr, in_addr> key = x.first;
         Vector < SocketRecord * > all_records = x.second;
@@ -50,30 +52,34 @@ void InterfaceMulticastTable::update(SocketMulticastTable table) {
 
         if (!excludes.empty()) {
             // Contains an exclude
-            filter_mode = Constants::MODE_IS_EXCLUDE;
-            source_list = vector_union(get_source_lists(excludes));
+            int filter_mode = Constants::MODE_IS_EXCLUDE;
+            Vector <in_addr> source_list = vector_union(get_source_lists(excludes));
             source_list = vector_minus(source_list, vector_union(get_source_lists(includes)));
-            records.push_back(InterfaceRecord(key.first, filter_mode, source_list));
+            records.push_back(new InterfaceRecord(key.first, filter_mode, source_list));
         } else {
             // All includes
-            filter_mode = Constants::MODE_IS_INCLUDE;
-            source_list = vector_union(get_source_lists(includes));
-            records.push_back(InterfaceRecord(key.first, filter_mode, source_list));
+            int filter_mode = Constants::MODE_IS_INCLUDE;
+            Vector <in_addr> source_list = vector_union(get_source_lists(includes));
+            records.push_back(new InterfaceRecord(key.first, filter_mode, source_list));
         }
     }
 }
 
-};
 
 Vector <in_addr> InterfaceMulticastTable::vector_minus(Vector <in_addr> vec_a, Vector <in_addr> vec_b) {
     Vector <in_addr> result = Vector<in_addr>();
-    for (auto el: vec_a)
+    for (auto el: vec_a) {
+        if (!contains(vec_b, el)) {
+            result.push_back(el);
+        }
+    }
+    return result;
 }
 
-Vector<SocketRecord *> InterfaceMulticastTable::vector_union(Vector<Vector<SocketRecord *>> vectors) {
+Vector<SocketRecord *> InterfaceMulticastTable::vector_union(Vector <Vector<SocketRecord *>> vectors) {
     Vector < SocketRecord * > unioned = Vector<SocketRecord *>();
-    for (auto vector: vectors) {
-        for (auto el: vector) {
+    for (Vector<SocketRecord*> vector: vectors) {
+        for (SocketRecord* el: vector) {
             // TODO? Check if element already in unioned
             unioned.push_back(el);
         }
@@ -81,26 +87,47 @@ Vector<SocketRecord *> InterfaceMulticastTable::vector_union(Vector<Vector<Socke
     return unioned;
 }
 
-Vector <Vector<in_addr>> InterfaceMulticastTable::get_source_lists_union(Vector<SocketRecord *> record_list) {
-    auto source_lists = Vector<SocketRecord *>();
+Vector<in_addr> InterfaceMulticastTable::vector_union(Vector <Vector<in_addr>> vectors) {
+    Vector < in_addr > unioned = Vector<in_addr>();
+    for (Vector<in_addr> vector: vectors) {
+        for (in_addr el: vector) {
+            // TODO? Check if element already in unioned
+            unioned.push_back(el);
+        }
+    }
+    return unioned;
+}
+
+Vector <Vector<in_addr>> InterfaceMulticastTable::get_source_lists(Vector<SocketRecord *> record_list) {
+    auto source_lists = Vector < Vector < in_addr >> ();
     for (auto record: record_list) {
-        source_lists.push_back(record);
+        source_lists.push_back(record->source_list);
     }
     return source_lists;
 }
 
-bool InterfaceMulticastTable::containsPair(Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> &map,
+bool InterfaceMulticastTable::containsPair(HashMap <Pair<in_addr, in_addr>, Vector<SocketRecord *>> &map,
                                            Pair <in_addr, in_addr> key) {
     // src: https://stackoverflow.com/questions/3136520/determine-if-map-contains-a-value-for-a-key
-    if (map.find(key) == map.end()) {
-        return false;
+    // smh, werkt ni for some reason
+//    if (map.find(key) == map.end()) {
+//        return false;
+//    }
+//    return true;
+
+    // Dan maar op deze inefficiente manier
+    // smh die map doet moeilijk, mss gebruik ik beter gewoon een Vector<Pair<Pair<interface, multicast>, SocketRecord*>>
+    for (auto i = map.begin(); i != map.end(); i++) {
+        if (i->first == key) {
+            return true;
+        }
     }
-    return true;
+    return false;
 }
 
 bool InterfaceMulticastTable::contains(Vector <in_addr> vector, in_addr value) {
     // src: https://stackoverflow.com/questions/3136520/determine-if-map-contains-a-value-for-a-key
-    if (map.find(key) == map.end()) {
+    if (find(vector.begin(), vector.end(), value) == vector.end()) {
         return false;
     }
     return true;

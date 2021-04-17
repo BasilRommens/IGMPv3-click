@@ -13,6 +13,11 @@
  * same multicast address and interface. (rfc3376, 3.2)
 */
 
+#ifndef CLICK_InterfaceMulticastTable_HH
+#define CLICK_InterfaceMulticastTable_HH
+
+#include <click/hashmap.hh>
+#include <click/pair.hh>
 
 struct InterfaceRecord {
     in_addr multicast_address;
@@ -22,15 +27,16 @@ struct InterfaceRecord {
 };
 
 class InterfaceMulticastTable {
+public:
     // Must be kept per interface -> Maybe use a map instead?
-    Vector <InterfaceRecord> records;
+    Vector <InterfaceRecord*> records;
 
     /**
      * Appends the SocketRecord to the list corresponding to the (interface, multicast_adress) pair in the map
      * @param multicast_pairs (interface, multicast_address) pair
      * @param record Recrod to include at the position
      */
-    void addToMapVector(Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs, SocketRecord *record);
+    void addToMapVector(HashMap<Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs, SocketRecord *record);
 
     /**
      * Returns two seperate vector, one with the records with filter mode include, the other with the records with
@@ -44,7 +50,7 @@ class InterfaceMulticastTable {
      * Updates the interface records, based on a SocketMulticastTable
      * @param table Table containing the socket records
      */
-    void update(SocketMulticastTable table);
+    void update(SocketMulticastTable* table);
 
     /**
      * Given vector A and vector B, this returns a new vector A-B, which is the vector A with all elements that are in
@@ -61,13 +67,14 @@ class InterfaceMulticastTable {
      * @return The union of all given vectors
      */
     Vector<SocketRecord *> vector_union(Vector<Vector<SocketRecord *>> vectors);
+    Vector<in_addr> vector_union(Vector<Vector<in_addr>> vectors);
 
     /**
      * Given a vector of socketRecord, return a vector containing all their source_lists
      * @param records A vector containing all SocketRecords
      * @return The source_lists corresponding to the SocketRecords
      */
-    Vector <Vector<in_addr>> get_source_lists_union(Vector<SocketRecord *> records);
+    Vector <Vector<in_addr>> get_source_lists(Vector<SocketRecord *> records);
 
     /**
      * Given a Map and an identifier pair (interface, multicast_address), determine whether the pair already exists in
@@ -76,7 +83,7 @@ class InterfaceMulticastTable {
      * @param key Identifier pair (interface, multicast_address) of which you want to check whether it's in the map
      * @return wether the pair is in the map
      */
-    bool containsPair(Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> &map, Pair <in_addr, in_addr> key);
+    bool containsPair(HashMap <Pair<in_addr, in_addr>, Vector<SocketRecord *>> &map, Pair <in_addr, in_addr> key);
 
     /**
      * Check if a vector contains a given value
@@ -87,3 +94,5 @@ class InterfaceMulticastTable {
     bool contains(Vector <in_addr> vector, in_addr value);
 
 };
+
+#endif
