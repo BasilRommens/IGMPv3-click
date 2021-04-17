@@ -15,12 +15,14 @@
 
 
 struct InterfaceRecord {
-    auto multicast_address;
-    auto filter_mode;
-    auto source_list;
+    in_addr multicast_address;
+    int filter_mode;
+    Vector<in_addr> source_list;
+    InterfaceRecord(in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
 };
 
 class InterfaceMulticastTable {
+    // Must be kept per interface -> Maybe use a map instead?
     Vector <InterfaceRecord> records;
 
     /**

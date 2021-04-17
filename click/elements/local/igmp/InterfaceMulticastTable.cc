@@ -1,6 +1,10 @@
 #include "InterfaceMulticastTable.hh"
+#include "constants.hh"
 
+InterfaceRecord::InterfaceRecord(in_addr multicast_address, int filter_mode, Vector<in_addr> source_list) :
+multicast_address(multicast_address), filter_mode(filter_mode), source_list(source_list){
 
+}
 void InterfaceMulticastTable::addToMapVector(Map <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs,
                                              SocketRecord *record) {
     auto key = Pair<in_addr, in_addr>(record.multicast_address);
@@ -46,15 +50,15 @@ void InterfaceMulticastTable::update(SocketMulticastTable table) {
 
         if (!excludes.empty()) {
             // Contains an exclude
-            filter_mode = EXCLUDE;
+            filter_mode = Constants::MODE_IS_EXCLUDE;
             source_list = vector_union(get_source_lists(excludes));
             source_list = vector_minus(source_list, vector_union(get_source_lists(includes)));
-            // TODO: toevoegen aan records
+            records.push_back(InterfaceRecord(key.first, filter_mode, source_list));
         } else {
             // All includes
-            filter_mode = INCLUDE;
+            filter_mode = Constants::MODE_IS_INCLUDE;
             source_list = vector_union(get_source_lists(includes));
-            // TODO: toevoegen aan records
+            records.push_back(InterfaceRecord(key.first, filter_mode, source_list));
         }
     }
 }

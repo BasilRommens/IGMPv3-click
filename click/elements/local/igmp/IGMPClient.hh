@@ -65,3 +65,38 @@
 */
 
 // handle join -> Send report
+
+#ifndef CLICK_IGMPClient_HH
+#define CLICK_IGMPClient_HH
+
+#include <click/element.hh>
+#include <click/ipaddress.hh>
+#include "SocketMulticastTable.hh"
+
+CLICK_DECLS
+
+class IGMPClient : public Element {
+public:
+    IGMPClient();
+
+    ~IGMPClient();
+
+    const char* class_name() const { return "IGMPClient"; }
+    const char* port_count() const { return "1/1"; }
+    const char* processing() const { return PUSH; }
+
+    int configure(Vector<String>& conf, ErrorHandler* errh);
+
+    // Handles
+    int IGMPClient::join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+    int IGMPClient::leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+    void IGMPClient::add_handlers();
+
+
+private:
+    SocketMulticastTable* socketMulticastTable;
+    in_addr identifier;
+};
+
+CLICK_ENDDECLS
+#endif

@@ -23,7 +23,7 @@
 class SocketRecord {
     in_addr interface; // TODO: correct type?
     in_addr multicast_address;
-    int filter_mode; // TODO: correct type?
+    int filter_mode; // rfc p. 16: 1 if include, 2 if exclude
     Vector<in_addr> source_list;
 
     SocketRecord(in_addr interface_init){
@@ -31,14 +31,17 @@ class SocketRecord {
     }
 
     bool is_include() {
-        return false; // TODO
+        return filter_mode == 1;
     }
 
     bool is_exclude() {
-        return !is_include(); // TODO
+        return filter_mode == 2;
     }
 };
 class SocketMulticastTable {
+    // Update for each socket on which IPMulticastListen has been invoked
+    // Must be kept per socket -> Maybe use a map instead? Or keep it as attribute in interface?
+
     Vector<SocketRecord*> records;
     void addRecord(SocketRecord* requested);
     int get_index(in_addr interface, in_addr multicast_address);
