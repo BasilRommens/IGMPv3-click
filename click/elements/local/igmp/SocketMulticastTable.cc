@@ -9,7 +9,7 @@ void SocketMulticastTable::addRecord(SocketRecord* requested) {
      * entry is present, the request is ignored.
      */
     if (requested->is_include() && requested->source_list.empty()){
-        delete_if_exists(requested.interface);
+        delete_if_exists(requested->interface);
     }
 
     /* If the requested filter mode is EXCLUDE *or* the requested source
@@ -22,7 +22,7 @@ void SocketMulticastTable::addRecord(SocketRecord* requested) {
     if (requested->is_exclude() or !requested->source_list.empty()){
         index = get_index_or_create(requested->interface, requested->multicast_address);
         SocketRecord* record = records[index];
-        record->filter_mode = requested->filtermode;
+        record->filter_mode = requested->filter_mode;
         record->source_list = requested->source_list;
     }
 }
@@ -30,7 +30,7 @@ void SocketMulticastTable::addRecord(SocketRecord* requested) {
 int SocketMulticastTable::get_index(in_addr interface, in_addr multicast_address) {
     // Returnt -1 als er geen entry voor de gegeven interface inzit, anders de index
     int index = -1;
-    for (int i = 0; i < records.length(); i++) {
+    for (int i = 0; i < records.size(); i++) {
         if (records[i]->interface == interface && records[i]->multicast_address == multicast_address){
             index = i;
             break;
@@ -42,7 +42,7 @@ int SocketMulticastTable::get_index(in_addr interface, in_addr multicast_address
 void SocketMulticastTable::delete_if_exists(in_addr interface, in_addr multicast_address) {
     int index = get_index(interface, multicast_address);
     if (index >= 0){
-        records.erase(index);
+        records.erase(records.begin() + index);
     }
 }
 
@@ -51,7 +51,7 @@ int SocketMulticastTable::get_index_or_create(in_addr interface, in_addr multica
     if (index == -1) {
         SocketRecord* record = new SocketRecord(interface);
         records.push_back(record);
-        index = records.length() - 1;
+        index = records.size() - 1;
     }
     return index;
 }

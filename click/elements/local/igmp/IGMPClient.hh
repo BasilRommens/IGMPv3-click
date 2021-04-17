@@ -71,32 +71,39 @@
 
 #include <click/element.hh>
 #include <click/ipaddress.hh>
-#include "SocketMulticastTable.hh"
+#include "SocketMulticastTable.cc"
 
 CLICK_DECLS
-
+//
 class IGMPClient : public Element {
 public:
     IGMPClient();
 
     ~IGMPClient();
 
-    const char* class_name() const { return "IGMPClient"; }
-    const char* port_count() const { return "1/1"; }
-    const char* processing() const { return PUSH; }
+    const char *class_name() const { return "IGMPClient"; }
 
-    int configure(Vector<String>& conf, ErrorHandler* errh);
+    const char *port_count() const { return "1/1"; }
 
-    // Handles
-    int IGMPClient::join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
-    int IGMPClient::leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
-    void IGMPClient::add_handlers();
+    const char *processing() const { return PUSH; }
+
+    int configure(Vector <String> &conf, ErrorHandler *errh);
+
+    void push(int port, Packet *p);
+
+
+
+    void add_handlers();
 
 
 private:
-    SocketMulticastTable* socketMulticastTable;
+    SocketMulticastTable *socketMulticastTable;
     in_addr identifier;
 };
+
+// Handles
+int join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 
 CLICK_ENDDECLS
 #endif

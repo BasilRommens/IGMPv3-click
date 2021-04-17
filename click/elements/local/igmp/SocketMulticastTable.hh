@@ -21,6 +21,7 @@
 */
 
 class SocketRecord {
+public:
     in_addr interface; // TODO: correct type?
     in_addr multicast_address;
     int filter_mode; // rfc p. 16: 1 if include, 2 if exclude
@@ -38,6 +39,7 @@ class SocketRecord {
         return filter_mode == 2;
     }
 };
+
 class SocketMulticastTable {
     // Update for each socket on which IPMulticastListen has been invoked
     // Must be kept per socket -> Maybe use a map instead? Or keep it as attribute in interface?
@@ -50,3 +52,4 @@ class SocketMulticastTable {
 
     int get_index_or_create(in_addr interface, in_addr multicast_address);
 };
+
