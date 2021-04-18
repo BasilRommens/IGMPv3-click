@@ -49,7 +49,7 @@ public:
      * @param multicast_pairs (interface, multicast_address) pair
      * @param record Recrod to include at the position
      */
-    void addToMapVector(RecordMap multicast_pairs, SocketRecord *record);
+    void addToMapVector(RecordMap &multicast_pairs, SocketRecord *record);
 
     /**
      * Returns two seperate vector, one with the records with filter mode include, the other with the records with

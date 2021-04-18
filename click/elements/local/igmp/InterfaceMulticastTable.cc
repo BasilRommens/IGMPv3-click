@@ -6,7 +6,7 @@ InterfaceRecord::InterfaceRecord(in_addr multicast_address, int filter_mode, Vec
 
 }
 
-void InterfaceMulticastTable::addToMapVector(RecordMap multicast_pairs, SocketRecord *record) {
+void InterfaceMulticastTable::addToMapVector(RecordMap &multicast_pairs, SocketRecord *record) {
     auto key = Pair<in_addr, in_addr>(record->interface, record->multicast_address);
     if (!containsPair(multicast_pairs, key)) {
         mapAddNew(multicast_pairs, key);
