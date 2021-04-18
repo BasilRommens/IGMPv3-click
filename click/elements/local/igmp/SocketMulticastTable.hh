@@ -30,7 +30,7 @@ public:
     in_addr interface; // TODO: correct type?, wordt al bijgehouden in interface, dus mss enkel socket bijhouden en interface niet?
     in_addr multicast_address;
     int filter_mode; // rfc p. 16: 1 if include, 2 if exclude
-    Vector <in_addr> source_list;
+    Vector<in_addr> source_list;
 
     SocketRecord(in_addr interface_init) {
         interface = interface_init;

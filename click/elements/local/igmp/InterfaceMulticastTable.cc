@@ -189,4 +189,5 @@ String InterfaceMulticastTable::to_string() {
     for (auto record: records){
         result += record->to_string() + "\n";
     }
+    return result;
 }
