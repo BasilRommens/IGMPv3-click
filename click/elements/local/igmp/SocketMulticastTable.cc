@@ -41,9 +41,7 @@ int SocketMulticastTable::get_index(in_addr interface, in_addr multicast_address
 {
     // Returnt -1 als er geen entry voor de gegeven interface inzit, anders de index
     int index = -1;
-    click_chatter("test");
     for (int i = 0; i<records.size(); i++) {
-        click_chatter("test");
         if (records[i]->interface==interface && records[i]->multicast_address==multicast_address) {
             index = i;
             break;
