@@ -32,6 +32,13 @@ InterfaceMulticastTable::splitIncludeExclude(Vector<SocketRecord *> records) {
     return Pair < Vector < SocketRecord * > , Vector < SocketRecord * >> (includes, excludes);
 }
 
+bool InterfaceRecord::is_include() {
+    return filter_mode == Constants::MODE_IS_INCLUDE;
+}
+
+bool InterfaceRecord::is_exclude() {
+    return filter_mode == Constants::MODE_IS_EXCLUDE;
+}
 
 void InterfaceMulticastTable::update(SocketMulticastTable *table) {
     // Get all (interface, multicast_address) pairs
@@ -122,4 +129,47 @@ bool InterfaceMulticastTable::contains(Vector <in_addr> vector, in_addr value) {
         return false;
     }
     return true;
+}
+
+void InterfaceMulticastTable::mapAddNew(RecordMap &map, InterfaceMulticastIdentifier &key) {
+    auto newEntry = Pair < InterfaceMulticastIdentifier, Vector<SocketRecord *>>
+    (key, Vector < SocketRecord * > ());
+    map.push_back(newEntry);
+}
+
+Vector<SocketRecord *> &InterfaceMulticastTable::getMapValue(RecordMap &map, InterfaceMulticastIdentifier &key) {
+    for (auto &pair: map) {
+        if (pair.first == key) {
+            return pair.second;
+        }
+    }
+}
+
+
+// Komt niet echt overeen met de IS_IN, IS_EX uit de rfc, want die hebben een source_list als parameter
+bool InterfaceMulticastTable::is_in(in_addr multicast_address) {
+    return filter_state(multicast_address) == Constants::MODE_IS_INCLUDE;
+}
+
+bool InterfaceMulticastTable::is_ex(in_addr multicast_address) {
+    return filter_state(multicast_address) == Constants::MODE_IS_EXCLUDE;
+}
+
+InterfaceRecord* InterfaceMulticastTable::getRecord(in_addr multicast_address){
+    for (auto record: records){
+        if (record->multicast_address == multicast_address){
+            return record;
+        }
+    }
+    return nullptr;
+}
+
+int InterfaceMulticastTable::filter_state(in_addr multicast_address) {
+    InterfaceRecord* record = getRecord(multicast_address);
+    if (record != nullptr) {
+        return record->filter_mode;
+    } else {
+        // Non-existing entry is interpreted as INCLUDE with empty source list
+        return Constants::MODE_IS_INCLUDE;
+    }
 }

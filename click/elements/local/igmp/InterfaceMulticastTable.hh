@@ -19,27 +19,33 @@
 #include <click/vector.hh>
 #include <click/pair.hh>
 
-typedef Pair<in_addr, in_addr> InterfaceMulticastIdentifier;
-typedef Vector< Pair< InterfaceMulticastIdentifier,Vector<SocketRecord *>>> RecordMap; // Maps (interface, multicast) onto list of records
+typedef Pair <in_addr, in_addr> InterfaceMulticastIdentifier;
+typedef Vector <Pair<InterfaceMulticastIdentifier, Vector < SocketRecord * >>>
+RecordMap; // Maps (interface, multicast) onto list of records
 
 struct InterfaceRecord {
     in_addr multicast_address;
     int filter_mode;
-    Vector<in_addr> source_list;
-    InterfaceRecord(in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
+    Vector <in_addr> source_list;
+
+    InterfaceRecord(in_addr multicast_address, int filter_mode, Vector <in_addr> source_list);
+
+    bool is_include();
+
+    bool is_exclude();
 };
 
 class InterfaceMulticastTable {
 public:
     // Must be kept per interface -> Maybe use a map instead?
-    Vector <InterfaceRecord*> records;
+    Vector<InterfaceRecord *> records;
 
     /**
      * Appends the SocketRecord to the list corresponding to the (interface, multicast_adress) pair in the map
      * @param multicast_pairs (interface, multicast_address) pair
      * @param record Recrod to include at the position
      */
-    void addToMapVector(RecordMap  multicast_pairs, SocketRecord *record);
+    void addToMapVector(RecordMap multicast_pairs, SocketRecord *record);
 
     /**
      * Returns two seperate vector, one with the records with filter mode include, the other with the records with
@@ -53,7 +59,7 @@ public:
      * Updates the interface records, based on a SocketMulticastTable
      * @param table Table containing the socket records
      */
-    void update(SocketMulticastTable* table);
+    void update(SocketMulticastTable *table);
 
     /**
      * Given vector A and vector B, this returns a new vector A-B, which is the vector A with all elements that are in
@@ -69,8 +75,9 @@ public:
      * @param vectors List of vectors of socketrecords that must be unioned
      * @return The union of all given vectors
      */
-    Vector<SocketRecord *> vector_union(Vector<Vector<SocketRecord *>> vectors);
-    Vector<in_addr> vector_union(Vector<Vector<in_addr>> vectors);
+    Vector<SocketRecord *> vector_union(Vector <Vector<SocketRecord *>> vectors);
+
+    Vector <in_addr> vector_union(Vector <Vector<in_addr>> vectors);
 
     /**
      * Given a vector of socketRecord, return a vector containing all their source_lists
@@ -99,18 +106,19 @@ public:
     /**
      * Adds an empty array to the map at index key
      */
-    void mapAddNew(RecordMap &map, InterfaceMulticastIdentifier& key){
-        auto newEntry = Pair<InterfaceMulticastIdentifier,Vector<SocketRecord *>>(key, Vector<SocketRecord *>());
-        map.push_back(newEntry);
-    }
+    void mapAddNew(RecordMap &map, InterfaceMulticastIdentifier &key);
 
-    Vector<SocketRecord*>& getMapValue(RecordMap &map, InterfaceMulticastIdentifier& key){
-        for (auto& pair: map){
-            if (pair.first == key){
-                return pair.second;
-            }
-        }
-    }
+    Vector<SocketRecord *> &getMapValue(RecordMap &map, InterfaceMulticastIdentifier &key);
+
+
+    // Komt niet echt overeen met de IS_IN, IS_EX uit de rfc, want die hebben een source_list als parameter
+    bool is_in(in_addr multicast_address);
+
+    bool is_ex(in_addr multicast_address);
+
+    InterfaceRecord* getRecord(in_addr multicast_address);
+
+    int filter_state(in_addr multicast_address);
 
 };
 

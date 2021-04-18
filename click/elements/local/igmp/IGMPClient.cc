@@ -11,6 +11,7 @@
 
 #include "SocketMulticastTable.cc"
 #include "InterfaceMulticastTable.cc"
+#include "report.hh"
 
 CLICK_DECLS
 
@@ -31,8 +32,41 @@ void IGMPClient::push(int port, Packet *p) {
 void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
                                    Vector <in_addr> source_list) {
     SocketRecord* socketRecord = new SocketRecord(interface, multicast_address, filter_mode, source_list);
+
+    // Update it's own records
     socketMulticastTable->addRecord(socketRecord);
     interfaceMulticastTable->update(socketMulticastTable);
+
+    // Send report packet
+    int old_state = interfaceMulticastTable->filter_state(multicast_address);
+    filter_mode = new_filter_mode(old_state, filter_mode);
+    GroupRecord* record = new GroupRecord(filter_mode, multicast_address, source_list);
+    Report report = Report();
+    report.addGroupRecord(record);
+    output(0).push(report.createPacket());
+
+}
+
+int IGMPClient::new_filter_mode(int old_state, int new_state){
+    /**
+     * A change of interface state causes the system to immediately transmit
+     * a State-Change Report from that interface. The type and contents of
+     * the Group Record(s) in that Report are determined by comparing the
+     * filter mode and source list for the affected multicast address before
+     * and after the change, according to the table below. If no interface
+     * state existed for that multicast address before the change (i.e., the
+     * change consisted of creating a new per-interface record), or if no
+     * state exists after the change (i.e., the change consisted of deleting
+     * a per-interface record), then the "non-existent" state is considered
+     * to have a filter mode of INCLUDE and an empty source list.
+     */
+    if (old_state == Constants::MODE_IS_INCLUDE && new_state == Constants::MODE_IS_EXCLUDE){
+        return Constants::CHANGE_TO_EXCLUDE_MODE;
+    } else if (old_state == Constants::MODE_IS_EXCLUDE && new_state == Constants::MODE_IS_INCLUDE) {
+        return Constants::CHANGE_TO_INCLUDE_MODE;
+    } else {
+        // not supported
+    }
 }
 
 int join_leave_handle(int filter_mode, const String &conf, Element *e, void *thunk, ErrorHandler *errh) {

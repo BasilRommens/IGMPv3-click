@@ -10,6 +10,9 @@
  * the interface from which the Report is sent. (rfc3376, 4.2.4)
  */
 struct GroupRecord {
+    GroupRecord() {}
+    GroupRecord(uint8_t record_type, in_addr multicast_address, Vector<in_addr> source_addresses);
+
     /**
      * One of those:
      * "Current-State Record"
@@ -89,6 +92,8 @@ struct GroupRecord {
  *  changes in the multicast reception state, of their interfaces. (rfc3376, 4.2)
  */
 struct Report {
+//    Report(Vector<GroupRecord*> group_records);
+
     /**
      * Type for a report is always 0x22
      */

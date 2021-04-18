@@ -2,9 +2,11 @@
 
 CLICK_DECLS
 
-        uint8_t
+GroupRecord::GroupRecord(uint8_t record_type, in_addr multicast_address, Vector<in_addr> source_addresses) : record_type(record_type), multicast_address(multicast_address), source_addresses(source_addresses) {
+    num_sources = htons(source_addresses.size());
+}
 
-GroupRecord::getRecordType()
+uint8_t GroupRecord::getRecordType()
 {
     return record_type;
 }
@@ -31,6 +33,10 @@ int GroupRecord::size()
     int auxiliary_size = aux_data_len*4;
     return default_size+source_address_size+auxiliary_size;
 }
+
+//Report::Report(Vector<GroupRecord*> group_records) : group_records(group_records) {
+//    num_group_records = htons(group_records.size());
+//}
 
 void Report::addGroupRecord(GroupRecord* record)
 {

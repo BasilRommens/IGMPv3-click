@@ -100,6 +100,9 @@ public:
 
     in_addr get_identifier(){ return identifier; }
 
+    // RFC3376, 5.1
+    int new_filter_mode(int old_state, int new_state);
+
 
 private:
     SocketMulticastTable *socketMulticastTable;
