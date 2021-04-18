@@ -35,19 +35,39 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
     interfaceMulticastTable->update(socketMulticastTable);
 }
 
-int join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
-    // Moet een record gaan sturen met de nieuwe info en dit updaten in zijn eigen socketMulticastTable
-    // Code copy pasta van click coding slides
-//    IGMPClient *me = (IGMPClient *) e;
-//    Vector<String> vconf;
-//    cp_argvec(conf, vconf);
-//    if (Args(vconf, me, errh).read(...).complete() < 0)
-//        return -1;
+int join_leave_handle(int filter_mode, const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
+
+    IGMPClient *igmpClient = (IGMPClient *) e;
+
+    // Read input
+    Vector<String> vconf;
+    cp_argvec(conf, vconf);
+    in_addr multicast_address;
+    if(Args(vconf, igmpClient, errh).read_m("ADDRESS", multicast_address).complete() < 0)
+        return -1;
+
+    // Handle input
+    igmpClient->IPMulticastListen(0, igmpClient->get_identifier(), multicast_address, filter_mode, Vector<in_addr>());
+
     return 0;
 }
 
+int join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
+    /**
+     * The Join operation is equivalent to
+     * IPMulticastListen ( socket, interface, multicast-address, EXCLUDE, {} )
+     * (rfc3376, 2)
+     */
+    return join_leave_handle(Constants::MODE_IS_EXCLUDE, conf, e, thunk, errh);
+}
+
 int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
-    return 0;
+    /**
+     * the Leave operation is equivalent to:
+     * IPMulticastListen ( socket, interface, multicast-address, INCLUDE, {} )
+     * (rfc3376, 2)
+     */
+    return join_leave_handle(Constants::MODE_IS_INCLUDE, conf, e, thunk, errh);
 }
 
 void IGMPClient::add_handlers() {

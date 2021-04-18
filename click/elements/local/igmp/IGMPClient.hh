@@ -94,18 +94,24 @@ public:
 
     void IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
 
+
+    // Handles
     void add_handlers();
+
+    in_addr get_identifier(){ return identifier; }
 
 
 private:
     SocketMulticastTable *socketMulticastTable;
     InterfaceMulticastTable *interfaceMulticastTable;
-    in_addr identifier;
+    in_addr identifier; // Is used as interface in the tables
 };
 
 // Handles
 int join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+int join_leave_handle(int filter_mode, const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
 
 CLICK_ENDDECLS
 #endif
