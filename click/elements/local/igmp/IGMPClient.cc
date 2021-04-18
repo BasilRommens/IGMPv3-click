@@ -115,8 +115,8 @@ String get_tables_handle(Element *e, void *thunk) {
 }
 
 void IGMPClient::add_handlers() {
-    add_write_handler("join_handle", &join_handle, (void *) 0);
-    add_write_handler("leave_handle", &leave_handle, (void *) 0);
+    add_write_handler("join", &join_handle, (void *) 0);
+    add_write_handler("leave", &leave_handle, (void *) 0);
     add_read_handler("tables", &get_tables_handle, 0);
 }
 
