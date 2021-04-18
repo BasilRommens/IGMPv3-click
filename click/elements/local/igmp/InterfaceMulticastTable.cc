@@ -189,8 +189,9 @@ String InterfaceRecord::to_string() {
 }
 
 String InterfaceMulticastTable::to_string() {
-    String result = "INTERFACE MULTICAST TABLE";
-    for (auto record: records){
+    String result = "INTERFACE MULTICAST TABLE\n";
+    for (int i = 0; i < records.size(); i++) {
+        auto record = records[i];
         result += record->to_string() + "\n";
     }
     return result;

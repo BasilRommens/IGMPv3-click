@@ -77,23 +77,17 @@ String SocketRecord::to_string() {
 }
 
 String SocketMulticastTable::to_string() {
-    String result = "SOCKET MULTICAST TABLE";
+    String result = "SOCKET MULTICAST TABLE\n";
 //    for (auto record: records){
 //        click_chatter("Hey");
 //        result += record->to_string() + "\n";
 //    }
-    click_chatter("voor");
-    Vector<SocketRecord *> test_records = Vector<SocketRecord*>();
-    click_chatter("voor");
-    for (int i = 0; i < test_records.size(); i++) {
-        click_chatter("1");
+
+    for (int i = 0; i < records.size(); i++) {
         auto record = records[i];
-        click_chatter("1");
         result += record->to_string() + "\n";
-        click_chatter("1");
     }
 
-    click_chatter("na");
     return result;
 
 }
