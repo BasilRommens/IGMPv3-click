@@ -39,6 +39,8 @@ struct InterfaceRecord {
 
 class InterfaceMulticastTable {
 public:
+    InterfaceMulticastTable();
+
     // Must be kept per interface -> Maybe use a map instead?
     Vector<InterfaceRecord *> records;
 
