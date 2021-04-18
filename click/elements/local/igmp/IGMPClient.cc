@@ -38,6 +38,8 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
 
     // Update it's own records
     socketMulticastTable->addRecord(socketRecord);
+    click_chatter("%d", socketMulticastTable->records[0]->multicast_address);
+
     interfaceMulticastTable->update(socketMulticastTable);
 
     // Send report packet
