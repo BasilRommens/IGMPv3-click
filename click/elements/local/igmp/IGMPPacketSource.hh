@@ -35,7 +35,6 @@ private:
     // Generates reports if true, queries if false
     bool generate_report = true;
 
-
 };
 
 CLICK_ENDDECLS
