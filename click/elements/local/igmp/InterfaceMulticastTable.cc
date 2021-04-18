@@ -6,13 +6,13 @@ InterfaceRecord::InterfaceRecord(in_addr multicast_address, int filter_mode, Vec
 
 }
 
-void InterfaceMulticastTable::addToMapVector(HashMap <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs,
-                                             SocketRecord *record) {
+void InterfaceMulticastTable::addToMapVector(RecordMap multicast_pairs, SocketRecord *record) {
     auto key = Pair<in_addr, in_addr>(record->interface, record->multicast_address);
     if (!containsPair(multicast_pairs, key)) {
-        multicast_pairs[key] = Vector<SocketRecord *>();
+        mapAddNew(multicast_pairs, key);
     }
-    multicast_pairs[key].push_back(record);
+
+    getMapValue(multicast_pairs, key).push_back(record);
 
 }
 
@@ -35,7 +35,7 @@ InterfaceMulticastTable::splitIncludeExclude(Vector<SocketRecord *> records) {
 
 void InterfaceMulticastTable::update(SocketMulticastTable *table) {
     // Get all (interface, multicast_address) pairs
-    HashMap <Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs; // rfc p.6
+    RecordMap multicast_pairs; // rfc p.6
     for (SocketRecord *record: table->records) {
         addToMapVector(multicast_pairs, record);
     }
@@ -106,19 +106,10 @@ Vector <Vector<in_addr>> InterfaceMulticastTable::get_source_lists(Vector<Socket
     return source_lists;
 }
 
-bool InterfaceMulticastTable::containsPair(HashMap <Pair<in_addr, in_addr>, Vector<SocketRecord *>> &map,
+bool InterfaceMulticastTable::containsPair(RecordMap &map,
                                            Pair <in_addr, in_addr> key) {
-    // src: https://stackoverflow.com/questions/3136520/determine-if-map-contains-a-value-for-a-key
-    // smh, werkt ni for some reason
-//    if (map.find(key) == map.end()) {
-//        return false;
-//    }
-//    return true;
-
-    // Dan maar op deze inefficiente manier
-    // smh die map doet moeilijk, mss gebruik ik beter gewoon een Vector<Pair<Pair<interface, multicast>, SocketRecord*>>
-    for (auto i = map.begin(); i != map.end(); i++) {
-        if (i->first == key) {
+    for (auto& pair: map){
+        if (pair.first == key){
             return true;
         }
     }

@@ -16,8 +16,11 @@
 #ifndef CLICK_InterfaceMulticastTable_HH
 #define CLICK_InterfaceMulticastTable_HH
 
-#include <click/hashmap.hh>
+#include <click/vector.hh>
 #include <click/pair.hh>
+
+typedef Pair<in_addr, in_addr> InterfaceMulticastIdentifier;
+typedef Vector< Pair< InterfaceMulticastIdentifier,Vector<SocketRecord *>>> RecordMap; // Maps (interface, multicast) onto list of records
 
 struct InterfaceRecord {
     in_addr multicast_address;
@@ -36,7 +39,7 @@ public:
      * @param multicast_pairs (interface, multicast_address) pair
      * @param record Recrod to include at the position
      */
-    void addToMapVector(HashMap<Pair<in_addr, in_addr>, Vector<SocketRecord *>> multicast_pairs, SocketRecord *record);
+    void addToMapVector(RecordMap  multicast_pairs, SocketRecord *record);
 
     /**
      * Returns two seperate vector, one with the records with filter mode include, the other with the records with
@@ -83,7 +86,7 @@ public:
      * @param key Identifier pair (interface, multicast_address) of which you want to check whether it's in the map
      * @return wether the pair is in the map
      */
-    bool containsPair(HashMap <Pair<in_addr, in_addr>, Vector<SocketRecord *>> &map, Pair <in_addr, in_addr> key);
+    bool containsPair(RecordMap &map, InterfaceMulticastIdentifier key);
 
     /**
      * Check if a vector contains a given value
@@ -92,6 +95,22 @@ public:
      * @return True if the vector contains the value
      */
     bool contains(Vector <in_addr> vector, in_addr value);
+
+    /**
+     * Adds an empty array to the map at index key
+     */
+    void mapAddNew(RecordMap &map, InterfaceMulticastIdentifier& key){
+        auto newEntry = Pair<InterfaceMulticastIdentifier,Vector<SocketRecord *>>(key, Vector<SocketRecord *>());
+        map.push_back(newEntry);
+    }
+
+    Vector<SocketRecord*>& getMapValue(RecordMap &map, InterfaceMulticastIdentifier& key){
+        for (auto& pair: map){
+            if (pair.first == key){
+                return pair.second;
+            }
+        }
+    }
 
 };
 
