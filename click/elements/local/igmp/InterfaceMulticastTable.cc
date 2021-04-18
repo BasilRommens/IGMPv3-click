@@ -40,6 +40,10 @@ bool InterfaceRecord::is_exclude() {
     return filter_mode == Constants::MODE_IS_EXCLUDE;
 }
 
+InterfaceMulticastTable::InterfaceMulticastTable() {
+    records = Vector<InterfaceRecord*>();
+}
+
 void InterfaceMulticastTable::update(SocketMulticastTable *table) {
     // Get all (interface, multicast_address) pairs
     RecordMap multicast_pairs; // rfc p.6

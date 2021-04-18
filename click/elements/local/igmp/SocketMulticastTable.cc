@@ -4,6 +4,7 @@ SocketMulticastTable::SocketMulticastTable() {
     records = Vector<SocketRecord*>();
 }
 
+
 void SocketMulticastTable::addRecord(SocketRecord* requested) {
     // WARNING: DIT IS ALLEMAAL NOG PSEUDOCODE (aka misschien werkende code die ik nog niet getest heb)
 
