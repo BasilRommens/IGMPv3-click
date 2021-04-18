@@ -23,6 +23,8 @@
 #ifndef CLICK_SocketMulticastTable_HH
 #define CLICK_SocketMulticastTable_HH
 
+#include <click/string.hh>
+
 class SocketRecord {
 public:
     in_addr interface; // TODO: correct type?, wordt al bijgehouden in interface, dus mss enkel socket bijhouden en interface niet?
@@ -46,6 +48,8 @@ public:
     bool is_exclude() {
         return filter_mode == 2;
     }
+
+    String to_string();
 };
 
 class SocketMulticastTable {
@@ -61,7 +65,11 @@ public:
     void delete_if_exists(in_addr interface, in_addr multicast_address);
 
     int get_index_or_create(in_addr interface, in_addr multicast_address);
+
+    String to_string();
 };
+
+String inadress_to_string(in_addr addr);
 
 #endif
 

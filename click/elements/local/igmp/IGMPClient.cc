@@ -104,9 +104,20 @@ int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh
     return join_leave_handle(Constants::MODE_IS_INCLUDE, conf, e, thunk, errh);
 }
 
+
+String get_tables_handle(Element *e, void *thunk) {
+    IGMPClient *igmpClient = (IGMPClient *) e;
+    SocketMulticastTable* socketMulticastTable = igmpClient->get_socket_multicast_table();
+    InterfaceMulticastTable* interfaceMulticastTable = igmpClient->get_interface_multicast_table();
+    String socketString = socketMulticastTable->to_string();
+    String interfaceString = interfaceMulticastTable->to_string();
+    return socketString + "\n" + interfaceString;
+}
+
 void IGMPClient::add_handlers() {
     add_write_handler("join_handle", &join_handle, (void *) 0);
     add_write_handler("leave_handle", &leave_handle, (void *) 0);
+    add_read_handler("tables", &get_tables_handle, 0);
 }
 
 CLICK_ENDDECLS

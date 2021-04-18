@@ -99,6 +99,8 @@ public:
     void add_handlers();
 
     in_addr get_identifier(){ return identifier; }
+    InterfaceMulticastTable* get_interface_multicast_table(){ return interfaceMulticastTable; }
+    SocketMulticastTable* get_socket_multicast_table(){ return socketMulticastTable; }
 
     // RFC3376, 5.1
     int new_filter_mode(int old_state, int new_state);
@@ -114,6 +116,8 @@ private:
 int join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 int join_leave_handle(int filter_mode, const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
+String get_tables_handle(Element *e, void *thunk);
 
 
 CLICK_ENDDECLS

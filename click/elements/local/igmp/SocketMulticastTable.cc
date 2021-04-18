@@ -57,3 +57,25 @@ int SocketMulticastTable::get_index_or_create(in_addr interface, in_addr multica
     }
     return index;
 }
+
+String SocketRecord::to_string() {
+    String result = "";
+    result += inadress_to_string(interface) + "\t";
+    result += inadress_to_string(multicast_address) + "\t";
+    result += String(filter_mode) + "\t";
+    for (auto source: source_list) {
+        result += inadress_to_string(source) + ", ";
+    }
+    return result;
+}
+
+String SocketMulticastTable::to_string() {
+    String result = "SOCKET MULTICAST TABLE";
+    for (auto record: records){
+        result += record->to_string() + "\n";
+    }
+}
+
+String inadress_to_string(in_addr addr){
+    return "TODO";
+}

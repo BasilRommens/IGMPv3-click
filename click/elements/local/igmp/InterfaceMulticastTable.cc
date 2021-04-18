@@ -173,3 +173,20 @@ int InterfaceMulticastTable::filter_state(in_addr multicast_address) {
         return Constants::MODE_IS_INCLUDE;
     }
 }
+
+String InterfaceRecord::to_string() {
+    String result = "";
+    result += inadress_to_string(multicast_address) + "\t";
+    result += String(filter_mode) + "\t";
+    for (auto source: source_list) {
+        result += inadress_to_string(source) + ", ";
+    }
+    return result;
+}
+
+String InterfaceMulticastTable::to_string() {
+    String result = "INTERFACE MULTICAST TABLE";
+    for (auto record: records){
+        result += record->to_string() + "\n";
+    }
+}

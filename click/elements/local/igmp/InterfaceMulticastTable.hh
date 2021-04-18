@@ -33,6 +33,8 @@ struct InterfaceRecord {
     bool is_include();
 
     bool is_exclude();
+
+    String to_string();
 };
 
 class InterfaceMulticastTable {
@@ -119,6 +121,8 @@ public:
     InterfaceRecord* getRecord(in_addr multicast_address);
 
     int filter_state(in_addr multicast_address);
+
+    String to_string();
 
 };
 
