@@ -15,7 +15,10 @@
 
 CLICK_DECLS
 
-IGMPClient::IGMPClient() {}
+IGMPClient::IGMPClient() {
+    interfaceMulticastTable = new InterfaceMulticastTable();
+    socketMulticastTable = new SocketMulticastTable();
+}
 
 IGMPClient::~IGMPClient() {}
 
@@ -107,7 +110,7 @@ int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh
 
 String get_tables_handle(Element *e, void *thunk) {
     IGMPClient *igmpClient = (IGMPClient *) e;
-    SocketMulticastTable* socketMulticastTable = igmpClient->get_socket_multicast_table();
+    SocketMulticastTable* socketMulticastTable = igmpClient->get_socket_multicast_table();\
     InterfaceMulticastTable* interfaceMulticastTable = igmpClient->get_interface_multicast_table();
     String socketString = socketMulticastTable->to_string();
     String interfaceString = interfaceMulticastTable->to_string();

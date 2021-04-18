@@ -1,5 +1,8 @@
 #include "SocketMulticastTable.hh"
 
+SocketMulticastTable::SocketMulticastTable() {
+    records = Vector<SocketRecord*>();
+}
 
 void SocketMulticastTable::addRecord(SocketRecord* requested) {
     // WARNING: DIT IS ALLEMAAL NOG PSEUDOCODE (aka misschien werkende code die ik nog niet getest heb)
@@ -59,6 +62,7 @@ int SocketMulticastTable::get_index_or_create(in_addr interface, in_addr multica
 }
 
 String SocketRecord::to_string() {
+    click_chatter("Hallo");
     String result = "";
     result += inadress_to_string(interface) + "\t";
     result += inadress_to_string(multicast_address) + "\t";
@@ -71,9 +75,24 @@ String SocketRecord::to_string() {
 
 String SocketMulticastTable::to_string() {
     String result = "SOCKET MULTICAST TABLE";
-    for (auto record: records){
+//    for (auto record: records){
+//        click_chatter("Hey");
+//        result += record->to_string() + "\n";
+//    }
+    click_chatter("voor");
+    Vector<SocketRecord *> test_records = Vector<SocketRecord*>();
+    click_chatter("voor");
+    for (int i = 0; i < test_records.size(); i++) {
+        click_chatter("1");
+        auto record = records[i];
+        click_chatter("1");
         result += record->to_string() + "\n";
+        click_chatter("1");
     }
+
+    click_chatter("na");
+    return result;
+
 }
 
 String inadress_to_string(in_addr addr){

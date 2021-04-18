@@ -56,6 +56,8 @@ class SocketMulticastTable {
     // Update for each socket on which IPMulticastListen has been invoked
     // Must be kept per socket -> Maybe use a map instead? Or keep it as attribute in interface?
 public:
+    SocketMulticastTable();
+
     Vector<SocketRecord *> records;
 
     void addRecord(SocketRecord* requested);
