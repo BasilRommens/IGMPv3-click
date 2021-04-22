@@ -1,5 +1,15 @@
+#include <clicknet/ip.h> // Must be above everything else otherwise this wouldn't work
+
+#include <click/config.h>
+#include <click/args.hh>
+#include <clicknet/ether.h>
+#include <click/error.hh>
+#include <click/packet_anno.hh>
+#include <click/timer.hh>
+
 #include "IGMPRouter.hh"
-#include "Constant.hh"
+#include "constants.hh"
+#include "report.hh"
 
 /**
 * Conceptually, when a group record is received, the router filter-mode
@@ -19,14 +29,19 @@
  * mode.
 */
 
+CLICK_DECLS
+
 IGMPRouter::IGMPRouter(){
     group_states = Vector<GroupState*>();
 }
 
+IGMPRouter::~IGMPRouter(){
 
-int get_current_state(in_addr multicast_address){
+}
+
+int IGMPRouter::get_current_state(in_addr multicast_address){
     for(auto groupState: group_states){
-        if (groupState->multicast_address) {
+        if (groupState->multicast_address == multicast_address) {
             return groupState->filter_mode;
         }
     }
@@ -46,12 +61,13 @@ void IGMPRouter::push(int port, Packet *p){
      * packets for excluded sources to a transit subnet.
      */
 
-    Report* report = (ReportPacket*) q->data();
+    Report* report = (Report*) p->data();
 
-    for (int i; i < report->num_group_records; i++){
-        GroupRecord groupRecord = report->group_records[i];
+    for (int i=0; i < report->num_group_records; i++){
+        GroupRecord* groupRecord = report->group_records[i];
 
-        int report_recd_mode = groupRecord->filter_mode;
+        // TODO check if this is the right implementation
+        int report_recd_mode = groupRecord->record_type;
         int router_state = get_current_state(groupRecord->multicast_address);
 
         // Action table rfc3376, p.31
@@ -79,3 +95,6 @@ void IGMPRouter::push(int port, Packet *p){
     }
 
 }
+
+CLICK_ENDDECLS
+EXPORT_ELEMENT(IGMPRouter)

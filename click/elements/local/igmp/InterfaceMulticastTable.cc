@@ -1,5 +1,4 @@
 #include "InterfaceMulticastTable.hh"
-#include "constants.hh"
 
 InterfaceRecord::InterfaceRecord(in_addr multicast_address, int filter_mode, Vector <in_addr> source_list) :
         multicast_address(multicast_address), filter_mode(filter_mode), source_list(source_list) {

@@ -15,8 +15,8 @@
  * join.
  */
 
-#ifndef CLICK_SocketMulticastTable_HH
-#define CLICK_SocketMulticastTable_HH
+#ifndef CLICK_GroupState_HH
+#define CLICK_GroupState_HH
 
 #include <click/string.hh>
 
@@ -33,7 +33,7 @@ public:
     int group_timer;
     int filter_mode;
     Vector<SourceRecord *> source_records;
-}
+};
 
 #endif
 

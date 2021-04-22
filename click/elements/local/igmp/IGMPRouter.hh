@@ -19,9 +19,9 @@ CLICK_DECLS
 
 class IGMPRouter : public Element {
 public:
-    IGMPPacketSource();
+    IGMPRouter();
 
-    ~IGMPPacketSource();
+    ~IGMPRouter();
 
     Vector<GroupState*> group_states;
 

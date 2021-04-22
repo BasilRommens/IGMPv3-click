@@ -9,8 +9,7 @@
 
 #include "IGMPClient.hh"
 
-#include "SocketMulticastTable.cc"
-#include "InterfaceMulticastTable.cc"
+#include "constants.hh"
 #include "report.hh"
 
 CLICK_DECLS
@@ -138,3 +137,4 @@ void IGMPClient::add_handlers()
 
 CLICK_ENDDECLS
 EXPORT_ELEMENT(IGMPClient)
+

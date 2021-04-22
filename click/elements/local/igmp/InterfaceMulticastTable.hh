@@ -19,6 +19,8 @@
 #include <click/vector.hh>
 #include <click/pair.hh>
 
+#include "constants.hh"
+
 typedef Pair <in_addr, in_addr> InterfaceMulticastIdentifier;
 typedef Vector <Pair<InterfaceMulticastIdentifier, Vector < SocketRecord * >>>
 RecordMap; // Maps (interface, multicast) onto list of records
