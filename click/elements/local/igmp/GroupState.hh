@@ -1,0 +1,40 @@
+/**
+ * Multicast routers implementing IGMPv3 keep state per group per
+ * attached network. This group state consists of a filter-mode, a list
+ * of sources, and various timers. For each attached network running
+ * IGMP, a multicast router records the desired reception state for that
+ * network. That state conceptually consists of a set of records of the
+ * form:
+ * (multicast address, group timer, filter-mode, (source records))
+ * Each source record is of the form:
+ * (source address, source timer)
+ * If all sources within a given group are desired, an empty source
+ * record list is kept with filter-mode set to EXCLUDE. This means
+ * hosts on this network want all sources for this group to be
+ * forwarded. This is the IGMPv3 equivalent to a IGMPv1 or IGMPv2 group
+ * join.
+ */
+
+#ifndef CLICK_SocketMulticastTable_HH
+#define CLICK_SocketMulticastTable_HH
+
+#include <click/string.hh>
+
+class SourceRecord {
+public:
+    in_addr source_address;
+    int source_timer;
+};
+
+// Kept per group per attached network
+class GroupState {
+public:
+    in_addr multicast_address;
+    int group_timer;
+    int filter_mode;
+    Vector<SourceRecord *> source_records;
+}
+
+#endif
+
+

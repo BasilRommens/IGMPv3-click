@@ -4,6 +4,8 @@
 #include <click/element.hh>
 #include <click/ipaddress.hh>
 
+#include "GroupState.hh"
+
 CLICK_DECLS
 
 /**
@@ -21,9 +23,16 @@ public:
 
     ~IGMPPacketSource();
 
+    Vector<GroupState*> group_states;
+
+    // rfc3376, p.31
+    int get_current_state(in_addr multicast_address);
+
     const char* class_name() const { return "IGMPRouter"; }
-    const char* port_count() const { return "-/="; }
+    const char* port_count() const { return "-/="; } // Any num input, evenveel output
     const char* processing() const { return AGNOSTIC; }
+
+    void push(int port, Packet *p);
 
     int configure(Vector<String>& conf, ErrorHandler* errh) { return 0; }
 };

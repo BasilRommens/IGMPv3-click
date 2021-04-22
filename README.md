@@ -4,9 +4,9 @@ Project for Telecommunications system, Arno Deceuninck and Basil Rommens will im
 ## Compiling & Running click script
 ```shell
 cd click
+./configure --disable-linuxmodule --enable-local --enable-etherswitch
 make elemlist
 make
-./configure --disable-linuxmodule --enable-local --enable-etherswitch
 userlevel/click test_project/temp.click
 ```
 
