@@ -50,11 +50,11 @@ void GroupRecord::add_source(in_addr source)
     num_sources = htons(ntohs(num_sources)+1);
 }
 
-WritablePacket* Report::createPacket()
+Packet* Report::createPacket()
 {
     // Room for the IP header and Ether header which must be added later by
-    //  another element
-    int headroom = sizeof(click_ip)+sizeof(click_ether);
+    // another element
+    int headroom = sizeof(click_ip)+sizeof(click_ether)+4;
 
     WritablePacket* q = Packet::make(headroom, 0, this->size(), 0);
     if (!q) {

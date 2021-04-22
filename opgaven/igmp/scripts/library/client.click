@@ -44,9 +44,8 @@ elementclass Client {
 	igmp_classifier[1]
 		-> DropBroadcasts
 		-> igmp_packet::StripIPHeader // Will take the igmp packet inside the IP packet
-		-> ToDump('igmp_packet.pcap')
 		-> igmp // The IGMP packet will be routed into the IGMP element of a client
-		-> IPEncap(2, $address, DST DST_ANNO, TTL 2) // put the IP header back
+		-> IPEncap(2, $address, DST DST_ANNO, TTL 2) // put the IP header on the igmp packet
 		-> arpq
 		-> output;
 

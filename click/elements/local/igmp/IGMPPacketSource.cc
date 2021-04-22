@@ -103,9 +103,8 @@ void IGMPPacketSource::run_timer(Timer* timer)
 {
     if (Packet*q = make_packet()) {
         Report* r = (Report*) q->data();
-//        click_chatter("Final: %d", r->group_records[0].getNumSources());
         output(0).push(q);
-        timer->reschedule_after_msec(1000);
+//        timer->reschedule_after_msec(1000);
     }
 }
 

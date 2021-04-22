@@ -136,7 +136,7 @@ struct Report {
 
     int size();
 
-    WritablePacket* createPacket();
+    Packet* createPacket();
 };
 
 struct ReportPacket {
