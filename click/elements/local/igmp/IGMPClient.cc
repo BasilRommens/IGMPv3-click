@@ -138,3 +138,5 @@ void IGMPClient::add_handlers()
 CLICK_ENDDECLS
 EXPORT_ELEMENT(IGMPClient)
 
+#include "SocketMulticastTable.cc"
+#include "InterfaceMulticastTable.cc"

@@ -71,8 +71,7 @@
 
 #include <click/element.hh>
 #include <click/ipaddress.hh>
-#include "SocketMulticastTable.cc"
-#include "InterfaceMulticastTable.cc"
+
 #include "SocketMulticastTable.hh"
 #include "InterfaceMulticastTable.hh"
 
@@ -124,3 +123,4 @@ String get_tables_handle(Element *e, void *thunk);
 
 CLICK_ENDDECLS
 #endif
+

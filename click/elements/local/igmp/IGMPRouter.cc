@@ -98,3 +98,5 @@ void IGMPRouter::push(int port, Packet *p){
 
 CLICK_ENDDECLS
 EXPORT_ELEMENT(IGMPRouter)
+
+#include "constants.cc"
