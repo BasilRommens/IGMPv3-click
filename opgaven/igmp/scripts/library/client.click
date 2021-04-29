@@ -1,4 +1,4 @@
-// Output configuration: 
+// Output configuration:
 //
 // Packets for the network are put on output 0
 // Packets for the host are put on output 1
@@ -13,7 +13,7 @@ elementclass Client {
 					$address:ipnet 0,
 					0.0.0.0/0.0.0.0 $gateway 1)
 		-> [1]output;
-	
+
 	rt[1]
 		-> DropBroadcasts
 		-> ipgw :: IPGWOptions($address)
@@ -45,9 +45,8 @@ elementclass Client {
 		-> DropBroadcasts
 		-> igmp_packet::StripIPHeader // Will take the igmp packet inside the IP packet
 		-> igmp // The IGMP packet will be routed into the IGMP element of a client
-		-> IPEncap(2, $address, DST DST_ANNO, TTL 2) // put the IP header on the igmp packet
-		-> arpq
-		-> output;
+		-> IPEncap(2, $address:ip, DST_ANNO, TTL 1) // put the IP header on the igmp packet
+		-> arpq;
 
 	// The special broadcast should not be dropped, so it skips the drop broadcasts
 	igmp_classifier[0]

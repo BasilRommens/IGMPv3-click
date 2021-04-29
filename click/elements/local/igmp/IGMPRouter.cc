@@ -5,6 +5,7 @@
 #include <clicknet/ether.h>
 #include <click/error.hh>
 #include <click/packet_anno.hh>
+#include <click/packet.hh>
 #include <click/timer.hh>
 
 #include "IGMPRouter.hh"
@@ -61,14 +62,15 @@ void IGMPRouter::push(int port, Packet *p){
      * packets for excluded sources to a transit subnet.
      */
 
-    Report* report = (Report*) p->data();
+    click_chatter("%d", p->data());
+    ReportPacket* report = (ReportPacket*) p->data();
 
-    for (int i=0; i < report->num_group_records; i++){
-        GroupRecord* groupRecord = report->group_records[i];
+    for (int i=0; i < ntohs(report->num_group_records); i++){
+        GroupRecord groupRecord = report->group_records[i];
 
         // TODO check if this is the right implementation
-        int report_recd_mode = groupRecord->record_type;
-        int router_state = get_current_state(groupRecord->multicast_address);
+        int report_recd_mode = groupRecord.record_type;
+        int router_state = get_current_state(groupRecord.multicast_address);
 
         // Action table rfc3376, p.31
         if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::MODE_IS_INCLUDE) {

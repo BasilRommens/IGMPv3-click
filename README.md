@@ -23,8 +23,8 @@ sudo ./start_click.sh
 Ports can be found in `start_click.sh`, example for client22.
 ```shell
 ./telnet localhost 10004
-write client22/igmp.join ADDRESS 225.1.1.1
+write client22/igmp.join 225.1.1.1
 read client22/igmp.tables
-write client22/igmp.leave ADDRESS 225.1.1.1
+write client22/igmp.leave 225.1.1.1
 read client22/igmp.tables
 ```

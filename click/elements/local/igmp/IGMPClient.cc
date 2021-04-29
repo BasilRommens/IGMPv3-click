@@ -89,7 +89,9 @@ int join_leave_handle(int filter_mode, const String& conf, Element* e, void* thu
     Vector<String> vconf;
     cp_argvec(conf, vconf);
     in_addr multicast_address;
-    if (Args(vconf, igmpClient, errh).read_m("ADDRESS", multicast_address).complete()<0)
+    // In order to avoid using ADDRESS before the IP Adress we use read_mp
+    // for positionally specified arguments
+    if (Args(vconf, igmpClient, errh).read_mp("ADDRESS", multicast_address).complete()<0)
         return -1;
 
     // Handle input
