@@ -112,4 +112,13 @@ elementclass Router {
 	client2_ipgw[1]  -> ICMPError($client2_address, parameterproblem) -> rt;
 	client2_ttl[1]   -> ICMPError($client2_address, timeexceeded) -> rt;
 	client2_frag[1]  -> ICMPError($client2_address, unreachable, needfrag) -> rt;
+
+	// TODO Manage the broadcast messages, this needs a lot of fixing
+	rt[4]
+		-> StripIPHeader
+		-> [3]igmp;
+
+	igmp[3] // Will decide where the multicast message will go
+		-> IPEncap(udp, $server_address:ip, DST_ANNO) // TODO fix ttl
+		-> server_ttl;
 }

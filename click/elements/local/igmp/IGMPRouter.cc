@@ -62,7 +62,7 @@ void IGMPRouter::push(int port, Packet *p){
      * packets for excluded sources to a transit subnet.
      */
 
-    click_chatter("%d", p->data());
+    click_chatter("%d", port);
     ReportPacket* report = (ReportPacket*) p->data();
 
     for (int i=0; i < ntohs(report->num_group_records); i++){
