@@ -61,10 +61,12 @@ int IGMPRouter::get_current_state(in_addr multicast_address){
 }
 
 void IGMPRouter::to_in(in_addr multicast_address){
+    click_chatter("Changing to in");
     update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE);
 }
 
 void IGMPRouter::to_ex(in_addr multicast_address){
+    click_chatter("Changing to ex");
     update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE);
 }
 
@@ -79,6 +81,7 @@ GroupState* IGMPRouter::get_or_create_group_state(in_addr multicast_address){
 void IGMPRouter::update_filter_mode(in_addr multicast_address, int filter_mode){
     GroupState* groupState = get_or_create_group_state(multicast_address);
     groupState->filter_mode = filter_mode;
+    click_chatter("Updated filter mode");
 }
 
 void IGMPRouter::process_udp(Packet* p) {
@@ -94,6 +97,7 @@ void IGMPRouter::process_report(ReportPacket* report) {
     click_chatter("Received report");
 
     for (int i=0; i < ntohs(report->num_group_records); i++){
+        click_chatter("Processing group record %d", i);
         GroupRecord groupRecord = report->group_records[i];
 
         // TODO check if this is the right implementation
@@ -101,18 +105,24 @@ void IGMPRouter::process_report(ReportPacket* report) {
         int router_state = get_current_state(groupRecord.multicast_address);
 
         // Action table rfc3376, p.31
-        if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::MODE_IS_INCLUDE) {
+        if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
+            to_in(groupRecord.multicast_address);
             // New state Include (A+B)
             // (B)=GMI
-        } else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::MODE_IS_EXCLUDE) {
+        } else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
+            to_ex(groupRecord.multicast_address);
             // New state Exclude (A*B, B-A)
             // (B-A)-0, Delete(A-B), GroupTimer=GMI
-        } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::MODE_IS_INCLUDE) {
+        } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
+            to_ex(groupRecord.multicast_address); // TODO: Report is include, moet dit in ons geval dan geen to_in worden???
             // New state Exclude(X+A, Y-A)
             // (A) = GMI
-        } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::MODE_IS_EXCLUDE) {
+        } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
+            to_ex(groupRecord.multicast_address);
             // New state Exclude(A-Y, Y*A)
             // (A-X-Y)=GMI, Delete(X-A), Delete(Y-A), GroupTimer=GMI
+        } else {
+            click_chatter("Hmmm, not found. Router is in state %d and report contains state %d.", router_state, report_recd_mode);
         }
 
 
@@ -123,6 +133,8 @@ void IGMPRouter::process_report(ReportPacket* report) {
 //            // suggest to forward traffic from source
 //        }
     }
+
+    click_chatter("Done processing report");
 
 }
 
