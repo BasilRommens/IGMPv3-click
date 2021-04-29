@@ -12,6 +12,8 @@
 #include "constants.hh"
 #include "report.hh"
 
+#include "query.hh"
+
 /**
 * Conceptually, when a group record is received, the router filter-mode
  * for that group is updated to cover all the requested sources using
@@ -49,21 +51,17 @@ int IGMPRouter::get_current_state(in_addr multicast_address){
     return Constants::MODE_IS_INCLUDE;
 }
 
-void IGMPRouter::push(int port, Packet *p){
-    /**
-     * When a multicast router receives a datagram from a source destined to
-     * a particular group, a decision has to be made whether to forward the
-     * datagram onto an attached network or not. The multicast routing
-     * protocol in use is in charge of this decision, and should use the
-     * IGMPv3 information to ensure that all sources/groups desired on a
-     * subnetwork are forwarded to that subnetwork. IGMPv3 information does
-     * not override multicast routing information; for example, if the
-     * IGMPv3 filter-mode group for G is EXCLUDE, a router may still forward
-     * packets for excluded sources to a transit subnet.
-     */
+void IGMPRouter::process_udp(Packet* p) {
+    click_chatter("Received UDP packet");
+}
 
-    click_chatter("%d", port);
-    ReportPacket* report = (ReportPacket*) p->data();
+void IGMPRouter::process_query(QueryPacket* query){
+    click_chatter("Received query");
+}
+
+void IGMPRouter::process_report(ReportPacket* report) {
+
+    click_chatter("Received report");
 
     for (int i=0; i < ntohs(report->num_group_records); i++){
         GroupRecord groupRecord = report->group_records[i];
@@ -95,6 +93,48 @@ void IGMPRouter::push(int port, Packet *p){
 //            // suggest to forward traffic from source
 //        }
     }
+
+}
+
+void IGMPRouter::push(int port, Packet *p){
+    /**
+     * When a multicast router receives a datagram from a source destined to
+     * a particular group, a decision has to be made whether to forward the
+     * datagram onto an attached network or not. The multicast routing
+     * protocol in use is in charge of this decision, and should use the
+     * IGMPv3 information to ensure that all sources/groups desired on a
+     * subnetwork are forwarded to that subnetwork. IGMPv3 information does
+     * not override multicast routing information; for example, if the
+     * IGMPv3 filter-mode group for G is EXCLUDE, a router may still forward
+     * packets for excluded sources to a transit subnet.
+     */
+
+    // Poort 3 -> UDP
+    // Andere poort -> Onderscheid maken tussen query en report
+    // Poort 0: Server
+    // Poort 1: Eerste client
+    // Poort 2: Tweede client
+
+    click_chatter("Received packet on port %d", port);
+
+    if (port == 3){
+        process_udp(p);
+    }
+
+    ReportPacket* report = (ReportPacket*) p->data();
+
+    if (report->type == Constants::REPORT_TYPE){
+        process_report(report);
+        return;
+    }
+
+    QueryPacket* query = (QueryPacket*) p->data();
+    if (report->type == Constants::REPORT_TYPE){
+        process_query(query);
+        return;
+    }
+
+
 
 }
 

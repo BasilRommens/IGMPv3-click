@@ -8,6 +8,8 @@ namespace Constants {
     extern int MODE_IS_EXCLUDE;
     extern int CHANGE_TO_INCLUDE_MODE;
     extern int CHANGE_TO_EXCLUDE_MODE;
+
+    extern int REPORT_TYPE;
 }
 
 #endif

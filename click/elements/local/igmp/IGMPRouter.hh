@@ -17,6 +17,9 @@ CLICK_DECLS
 * De router kan de join en leave verwerken en daarop de routering aanpassen. (opgave, 3.5)
 */
 
+class QueryPacket;
+class ReportPacket;
+
 class IGMPRouter : public Element {
 public:
     IGMPRouter();
@@ -33,6 +36,11 @@ public:
     const char* processing() const { return AGNOSTIC; }
 
     void push(int port, Packet *p);
+
+
+    void process_udp(Packet* p);
+    void process_query(QueryPacket* query);
+    void process_report(ReportPacket* report);
 
     int configure(Vector<String>& conf, ErrorHandler* errh) { return 0; }
 };
