@@ -30,6 +30,11 @@ public:
 
     // rfc3376, p.31
     int get_current_state(in_addr multicast_address);
+    void to_in(in_addr multicast_address);
+    void to_ex(in_addr multicast_address);
+    void update_filter_mode(in_addr multicast_address, int filter_mode);
+    GroupState* get_group_state(in_addr multicast_address);
+    GroupState* get_or_create_group_state(in_addr multicast_address);
 
     const char* class_name() const { return "IGMPRouter"; }
     const char* port_count() const { return "-/="; } // Any num input, evenveel output

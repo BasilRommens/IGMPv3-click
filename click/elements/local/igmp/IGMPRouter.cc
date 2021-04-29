@@ -42,13 +42,43 @@ IGMPRouter::~IGMPRouter(){
 
 }
 
-int IGMPRouter::get_current_state(in_addr multicast_address){
+GroupState* IGMPRouter::get_group_state(in_addr multicast_address){
     for(auto groupState: group_states){
         if (groupState->multicast_address == multicast_address) {
-            return groupState->filter_mode;
+            return groupState;
         }
     }
-    return Constants::MODE_IS_INCLUDE;
+    return nullptr;
+}
+
+int IGMPRouter::get_current_state(in_addr multicast_address){
+    GroupState* groupState = get_group_state(multicast_address);
+    if (groupState) {
+        return groupState->filter_mode;
+    } else {
+        return Constants::MODE_IS_INCLUDE;
+    }
+}
+
+void IGMPRouter::to_in(in_addr multicast_address){
+    update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE);
+}
+
+void IGMPRouter::to_ex(in_addr multicast_address){
+    update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE);
+}
+
+GroupState* IGMPRouter::get_or_create_group_state(in_addr multicast_address){
+    GroupState* groupState = get_group_state(multicast_address);
+    if (!groupState) {
+        groupState = new GroupState(multicast_address);
+    }
+    return groupState;
+}
+
+void IGMPRouter::update_filter_mode(in_addr multicast_address, int filter_mode){
+    GroupState* groupState = get_or_create_group_state(multicast_address);
+    groupState->filter_mode = filter_mode;
 }
 
 void IGMPRouter::process_udp(Packet* p) {
