@@ -3,6 +3,7 @@
 
 #include <click/element.hh>
 #include <click/ipaddress.hh>
+#include <click/pair.hh>
 
 #include "GroupState.hh"
 
@@ -26,15 +27,16 @@ public:
 
     ~IGMPRouter();
 
-    Vector<GroupState*> group_states;
+    Vector<Pair<int, GroupState*>> group_states;
 
     // rfc3376, p.31
-    int get_current_state(in_addr multicast_address);
-    void to_in(in_addr multicast_address);
-    void to_ex(in_addr multicast_address);
-    void update_filter_mode(in_addr multicast_address, int filter_mode);
-    GroupState* get_group_state(in_addr multicast_address);
-    GroupState* get_or_create_group_state(in_addr multicast_address);
+    int get_current_state(in_addr multicast_address, int port);
+    void to_in(in_addr multicast_address, int port);
+    void to_ex(in_addr multicast_address, int port);
+    void update_filter_mode(in_addr multicast_address, int filter_mode, int port);
+    Pair<int, GroupState*> get_group_state(in_addr multicast_address, int port);
+    Vector<Pair<int, GroupState*>> get_group_state_list(in_addr multicast_address);
+    Pair<int, GroupState*> get_or_create_group_state(in_addr multicast_address, int port);
 
     const char* class_name() const { return "IGMPRouter"; }
     const char* port_count() const { return "-/="; } // Any num input, evenveel output
@@ -44,8 +46,8 @@ public:
 
 
     void process_udp(Packet* p);
-    void process_query(QueryPacket* query);
-    void process_report(ReportPacket* report);
+    void process_query(QueryPacket* query, int port);
+    void process_report(ReportPacket* report, int port);
 
     int configure(Vector<String>& conf, ErrorHandler* errh) { return 0; }
 };

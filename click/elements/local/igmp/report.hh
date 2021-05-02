@@ -139,15 +139,6 @@ struct Report {
     Packet* createPacket();
 };
 
-struct ReportPacket {
-    uint8_t type = 0x22;
-    uint8_t reserved1 = 0x0;
-    uint16_t checksum;
-    uint16_t reserved2 = 0x0;
-    uint16_t num_group_records;
-    GroupRecord group_records[0];
-};
-
 struct GroupRecordPacket {
     uint8_t record_type;
     uint8_t aux_data_len = 0;
@@ -155,6 +146,17 @@ struct GroupRecordPacket {
     in_addr multicast_address;
     in_addr source_addresses[0];
 };
+
+struct ReportPacket {
+    uint8_t type = 0x22;
+    uint8_t reserved1 = 0x0;
+    uint16_t checksum;
+    uint16_t reserved2 = 0x0;
+    uint16_t num_group_records;
+    GroupRecordPacket group_records[0];
+};
+
+
 
 
 /**

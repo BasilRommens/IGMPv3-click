@@ -28,7 +28,10 @@ elementclass Router {
 					224.0.0.0/4 4);
 
 	// IGMP router
-	igmp::IGMPRouter;
+	igmp::IGMPRouter; // This router will process and handle the IGMP related packets
+	//igmp_send::IGMPRouter; // This router will send the UDP packets
+	// Will copy into the 2 igmp routers
+	//copy::Tee(2);
 
 	// ARP responses are copied to each ARPQuerier and the host.
 	arpt :: Tee (3);
@@ -108,6 +111,19 @@ elementclass Router {
 	server_frag[1]  -> ICMPError($server_address, unreachable, needfrag) -> rt;
 
 	igmp[0]
+		// This will be used to detect real IP headers, thus if it is an UDP packet.
+		// It will work because an IGMP packet will always contain a type field.
+		// This partly corresponds in the IP header with the length of the IP header.
+		// Since this type in a bare IGMP packet will always be 0x11 or 0x22, In binary
+		// this becomes 0001 0001 and 0010 0010. We only need to look at the last 4
+		// bits. These bits should be a minimum of 5, we clearly see that this is
+		// not the case and therefore the IP header should be faulty and filtered out.
+		-> check_server::CheckIPHeader;
+
+	check_server[0]
+		-> server_ttl;
+
+	check_server[1]
 		-> IPEncap(2, $client2_address:ip, DST_ANNO, TTL 1)
 		-> server_arpq;
 
@@ -126,9 +142,14 @@ elementclass Router {
 	client1_frag[1]  -> ICMPError($client1_address, unreachable, needfrag) -> rt;
 
 	igmp[1]
+		-> check_client1::CheckIPHeader;
+
+    check_client1[0]
+    	-> client1_ttl;
+
+    check_client1[1]
 		-> IPEncap(2, $client2_address:ip, DST_ANNO, TTL 1)
 		-> client1_arpq;
-
 
 	rt[3]
 		-> DropBroadcasts
@@ -140,6 +161,12 @@ elementclass Router {
 		-> client2_arpq;
 
 	igmp[2]
+		-> check_client2::CheckIPHeader;
+
+	check_client2[0]
+		-> client2_ttl;
+
+	check_client2[1]
 		-> IPEncap(2, $client2_address:ip, DST_ANNO, TTL 1)
 		-> client2_arpq;
 
@@ -150,10 +177,8 @@ elementclass Router {
 
 	// TODO Manage the broadcast messages, this needs a lot of fixing
 	rt[4]
-		-> StripIPHeader
-		-> [3]igmp;
+		-> [3]igmp; // Will decide where the multicast message will go
 
-	igmp[3] // Will decide where the multicast message will go
-		-> IPEncap(udp, $server_address:ip, DST_ANNO) // TODO fix ttl
+	igmp[3]
 		-> server_ttl;
 }

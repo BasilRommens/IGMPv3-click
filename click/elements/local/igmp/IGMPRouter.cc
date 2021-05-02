@@ -35,90 +35,107 @@
 CLICK_DECLS
 
 IGMPRouter::IGMPRouter(){
-    group_states = Vector<GroupState*>();
+    group_states = Vector<Pair<int, GroupState*>>();
 }
 
 IGMPRouter::~IGMPRouter(){
 
 }
 
-GroupState* IGMPRouter::get_group_state(in_addr multicast_address){
+Pair<int, GroupState*> IGMPRouter::get_group_state(in_addr multicast_address, int port){
     for(auto groupState: group_states){
-        if (groupState->multicast_address == multicast_address) {
+        if (groupState.first == port && groupState.second->multicast_address == multicast_address) {
             return groupState;
         }
     }
-    return nullptr;
+    return Pair<int, GroupState*>(0, nullptr);
 }
 
-int IGMPRouter::get_current_state(in_addr multicast_address){
-    GroupState* groupState = get_group_state(multicast_address);
+Vector<Pair<int, GroupState*>> IGMPRouter::get_group_state_list(in_addr multicast_address) {
+    Vector<Pair<int, GroupState*>> group_state_list = Vector<Pair<int, GroupState*>>();
+    for (auto groupState: group_states) {
+        if (groupState.second->multicast_address == multicast_address) {
+            group_state_list.push_back(groupState);
+        }
+    }
+    return group_state_list;
+}
+
+int IGMPRouter::get_current_state(in_addr multicast_address, int port){
+    Pair<int, GroupState*> groupState = get_group_state(multicast_address, port);
     if (groupState) {
-        return groupState->filter_mode;
+        return groupState.second->filter_mode;
     } else {
         return Constants::MODE_IS_INCLUDE;
     }
 }
 
-void IGMPRouter::to_in(in_addr multicast_address){
+void IGMPRouter::to_in(in_addr multicast_address, int port){
     click_chatter("Changing to in");
-    update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE);
+    update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE, port);
 }
 
-void IGMPRouter::to_ex(in_addr multicast_address){
+void IGMPRouter::to_ex(in_addr multicast_address, int port){
     click_chatter("Changing to ex");
-    update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE);
+    update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE, port);
 }
 
-GroupState* IGMPRouter::get_or_create_group_state(in_addr multicast_address){
-    GroupState* groupState = get_group_state(multicast_address);
+Pair<int, GroupState*> IGMPRouter::get_or_create_group_state(in_addr multicast_address, int port){
+    Pair<int, GroupState*> groupState = get_group_state(multicast_address, port);
     if (!groupState) {
-        groupState = new GroupState(multicast_address);
+        groupState = Pair<int, GroupState*>(port, new GroupState(multicast_address));
+        // Append the new group state because we just created it
+        group_states.push_back(groupState);
     }
     return groupState;
 }
 
-void IGMPRouter::update_filter_mode(in_addr multicast_address, int filter_mode){
-    GroupState* groupState = get_or_create_group_state(multicast_address);
-    groupState->filter_mode = filter_mode;
+void IGMPRouter::update_filter_mode(in_addr multicast_address, int filter_mode, int port){
+    Pair<int, GroupState*> groupState = get_or_create_group_state(multicast_address, port);
+    groupState.second->filter_mode = filter_mode;
     click_chatter("Updated filter mode");
 }
 
 void IGMPRouter::process_udp(Packet* p) {
-    click_chatter("Received UDP packet");
+    const click_ip* ip_header = p->ip_header();
+    Vector<Pair<int, GroupState*>> port_groups = get_group_state_list(ip_header->ip_dst);
+    for (auto port_group: port_groups) {
+        // TODO check the modes and such things
+        output(port_group.first).push(p);
+    }
 }
 
-void IGMPRouter::process_query(QueryPacket* query){
+void IGMPRouter::process_query(QueryPacket* query, int port){
     click_chatter("Received query");
 }
 
-void IGMPRouter::process_report(ReportPacket* report) {
+void IGMPRouter::process_report(ReportPacket* report, int port) {
 
-    click_chatter("Received report");
+    click_chatter("Received report on port %d", port);
 
     for (int i=0; i < ntohs(report->num_group_records); i++){
         click_chatter("Processing group record %d", i);
-        GroupRecord groupRecord = report->group_records[i];
+        GroupRecordPacket groupRecord = report->group_records[i];
 
         // TODO check if this is the right implementation
         int report_recd_mode = groupRecord.record_type;
-        int router_state = get_current_state(groupRecord.multicast_address);
+        int router_state = get_current_state(groupRecord.multicast_address, port);
 
         // Action table rfc3376, p.31
         if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
-            to_in(groupRecord.multicast_address);
+            to_in(groupRecord.multicast_address, port);
             // New state Include (A+B)
             // (B)=GMI
         } else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
-            to_ex(groupRecord.multicast_address);
+            to_ex(groupRecord.multicast_address, port);
             // New state Exclude (A*B, B-A)
             // (B-A)-0, Delete(A-B), GroupTimer=GMI
         } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
-            to_ex(groupRecord.multicast_address); // TODO: Report is include, moet dit in ons geval dan geen to_in worden???
+            to_ex(groupRecord.multicast_address, port); // TODO: Report is include, moet dit in ons geval dan geen to_in worden???
             // New state Exclude(X+A, Y-A)
             // (A) = GMI
         } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
-            to_ex(groupRecord.multicast_address);
+            to_ex(groupRecord.multicast_address, port);
             // New state Exclude(A-Y, Y*A)
             // (A-X-Y)=GMI, Delete(X-A), Delete(Y-A), GroupTimer=GMI
         } else {
@@ -166,13 +183,13 @@ void IGMPRouter::push(int port, Packet *p){
     ReportPacket* report = (ReportPacket*) p->data();
 
     if (report->type == Constants::REPORT_TYPE){
-        process_report(report);
+        process_report(report, port);
         return;
     }
 
     QueryPacket* query = (QueryPacket*) p->data();
     if (report->type == Constants::REPORT_TYPE){
-        process_query(query);
+        process_query(query, port);
         return;
     }
 
