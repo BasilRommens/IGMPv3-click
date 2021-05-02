@@ -37,6 +37,8 @@ public:
     Pair<int, GroupState*> get_group_state(in_addr multicast_address, int port);
     Vector<Pair<int, GroupState*>> get_group_state_list(in_addr multicast_address);
     Pair<int, GroupState*> get_or_create_group_state(in_addr multicast_address, int port);
+    bool is_packet_source_in_group_state(GroupState*, Packet*);
+    bool should_forward_udp(GroupState*, Packet*);
 
     const char* class_name() const { return "IGMPRouter"; }
     const char* port_count() const { return "-/="; } // Any num input, evenveel output
