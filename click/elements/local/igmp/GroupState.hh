@@ -22,6 +22,9 @@
 
 class SourceRecord {
 public:
+    SourceRecord(in_addr source_address, int source_timer)
+            :source_address(source_address), source_timer(source_timer) { }
+
     in_addr source_address;
     int source_timer;
 };
@@ -29,15 +32,16 @@ public:
 // Kept per group per attached network
 class GroupState {
 public:
-    GroupState(in_addr multicast_address) : multicast_address(multicast_address) {
+    GroupState(in_addr multicast_address)
+            :multicast_address(multicast_address)
+    {
         source_records = Vector<SourceRecord*>();
     };
     in_addr multicast_address;
     int group_timer;
     int filter_mode;
-    Vector<SourceRecord *> source_records;
+    Vector<SourceRecord*> source_records;
 };
-
 
 #endif
 

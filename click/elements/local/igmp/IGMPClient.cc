@@ -76,7 +76,7 @@ int IGMPClient::new_filter_mode(int old_state, int new_state)
         return Constants::CHANGE_TO_INCLUDE_MODE;
     }
     else {
-        // not supported
+        return Constants::CHANGE_TO_INCLUDE_MODE;
     }
 }
 

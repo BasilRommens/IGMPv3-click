@@ -39,6 +39,12 @@ public:
     Pair<int, GroupState*> get_or_create_group_state(in_addr multicast_address, int port);
     bool is_packet_source_in_group_state(GroupState*, Packet*);
     bool should_forward_udp(GroupState*, Packet*);
+    Vector<SourceRecord*> get_strict_positive_timer(GroupState*);
+    Vector<SourceRecord*> get_null_timer(GroupState*);
+    Vector<SourceRecord*> to_vector(in_addr[], uint16_t);
+    Vector<SourceRecord*> vector_union(Vector<SourceRecord*>, Vector<SourceRecord*>);
+    Vector<SourceRecord*> vector_difference(Vector<SourceRecord*>, Vector<SourceRecord*>);
+    Vector<SourceRecord*> vector_intersection(Vector<SourceRecord*>, Vector<SourceRecord*>);
 
     const char* class_name() const { return "IGMPRouter"; }
     const char* port_count() const { return "-/="; } // Any num input, evenveel output
@@ -51,7 +57,8 @@ public:
     void process_query(QueryPacket* query, int port);
     void process_report(ReportPacket* report, int port);
 
-    int configure(Vector<String>& conf, ErrorHandler* errh) { return 0; }
+    // Removed parameters because they are not used
+    int configure(Vector<String>&, ErrorHandler*) { return 0; }
 };
 
 CLICK_ENDDECLS

@@ -79,6 +79,7 @@ Packet* Report::createPacket()
         GroupRecordPacket* new_group_record = (GroupRecordPacket*) (record_ptr);
 
         new_group_record->record_type = cur_group_record->getRecordType();
+        click_chatter("%d", new_group_record->record_type);
         new_group_record->aux_data_len = cur_group_record->aux_data_len;
         new_group_record->num_sources = htons(cur_group_record->getNumSources());
         new_group_record->multicast_address = cur_group_record->getMulticastAddress();
