@@ -93,6 +93,8 @@ public:
 
     void push(int port, Packet *p);
 
+    void process_udp(Packet *p);
+
     void IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
 
 

@@ -28,11 +28,25 @@ int IGMPClient::configure(Vector<String>& conf, ErrorHandler* errh)
     return 0;
 }
 
+void IGMPClient::process_udp(Packet *p){
+    click_chatter("It's UDP :-)");
+    in_addr multicast_address;
+    if (interfaceMulticastTable->is_ex(multicast_address)){
+        // forward packet
+        output(2).push(p);
+    } else {
+        // drop packet
+        output(1).push(p);
+    }
+}
+
 void IGMPClient::push(int port, Packet* p)
 {
+    click_chatter("Received packet on port %d :-)", port);
+
     if (p->transport_header()) {
         if (p->udp_header()) {
-//            process_udp(p);
+            process_udp(p);
         }
     }
     else {
