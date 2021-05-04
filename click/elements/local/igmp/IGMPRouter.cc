@@ -298,7 +298,6 @@ void IGMPRouter::process_report(ReportPacket* report, int port)
             to_ex(groupRecord.multicast_address, port);
             // Router state
             Vector<SourceRecord*>A = router_record.second->source_records;
-            click_chatter("\e[1;31m%-6s\e[m", "Group state has wrong state.");
             // Report record
             Vector<SourceRecord*>B = to_vector(groupRecord.source_addresses, groupRecord.num_sources);
             // (B-A)=0, Delete (A-B), Send Q(G, A*B), Group Timer=GMI

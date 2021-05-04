@@ -36,9 +36,13 @@ elementclass Client {
 		ip proto igmp,
 		-);
 
-	// All the packets that are not in using the IGMP protocol
+	// All the packets that are not using the IGMP protocol
 	igmp_classifier[2]
+		-> [1]igmp[1]
 		-> ip;
+
+	igmp[2]
+		-> [1]output;
 
 	// All the packets that are under the IGMP protocol and are not broadcasts
 	igmp_classifier[1]
