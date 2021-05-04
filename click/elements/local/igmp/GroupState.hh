@@ -19,6 +19,7 @@
 #define CLICK_GroupState_HH
 
 #include <click/string.hh>
+#include "constants.hh"
 
 class SourceRecord {
 public:
@@ -35,6 +36,7 @@ public:
     GroupState(in_addr multicast_address)
             :multicast_address(multicast_address)
     {
+        filter_mode = Constants::MODE_IS_INCLUDE;
         source_records = Vector<SourceRecord*>();
     };
     in_addr multicast_address;
@@ -44,5 +46,3 @@ public:
 };
 
 #endif
-
-

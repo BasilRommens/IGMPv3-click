@@ -30,7 +30,14 @@ int IGMPClient::configure(Vector<String>& conf, ErrorHandler* errh)
 
 void IGMPClient::push(int port, Packet* p)
 {
-    output(port).push(p);
+    if (p->transport_header()) {
+        if (p->udp_header()) {
+//            process_udp(p);
+        }
+    }
+    else {
+        output(port).push(p);
+    }
 }
 
 void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
@@ -53,7 +60,6 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
     report_packet->set_dst_ip_anno(report_address);
     output(0).push(report_packet);
 }
-
 
 int IGMPClient::new_filter_mode(int old_state, int new_state)
 {

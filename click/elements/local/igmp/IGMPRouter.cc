@@ -239,7 +239,7 @@ void IGMPRouter::process_report(ReportPacket* report, int port)
 
         // TODO check if this is the right implementation
         int report_recd_mode = groupRecord.record_type;
-        Pair<int, GroupState*>router_record = get_group_state(groupRecord.multicast_address, port);
+        Pair<int, GroupState*>router_record = get_or_create_group_state(groupRecord.multicast_address, port);
         int router_state = get_current_state(groupRecord.multicast_address, port);
 
         // Action table rfc3376, p.31
@@ -284,7 +284,7 @@ void IGMPRouter::process_report(ReportPacket* report, int port)
             to_ex(groupRecord.multicast_address, port);
             // Router state
             // Timer >0
-            Vector<SourceRecord*>X = router_record.second->source_records;
+            Vector<SourceRecord*> X = router_record.second->source_records;
             // Timer =0
             Vector<SourceRecord*>Y = Vector<SourceRecord*>();
             // Report record
@@ -298,6 +298,7 @@ void IGMPRouter::process_report(ReportPacket* report, int port)
             to_ex(groupRecord.multicast_address, port);
             // Router state
             Vector<SourceRecord*>A = router_record.second->source_records;
+            click_chatter("\e[1;31m%-6s\e[m", "Group state has wrong state.");
             // Report record
             Vector<SourceRecord*>B = to_vector(groupRecord.source_addresses, groupRecord.num_sources);
             // (B-A)=0, Delete (A-B), Send Q(G, A*B), Group Timer=GMI
