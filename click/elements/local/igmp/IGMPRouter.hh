@@ -20,6 +20,8 @@ CLICK_DECLS
 
 class QueryPacket;
 class ReportPacket;
+class GroupRecordPacket;
+
 
 class IGMPRouter : public Element {
 public:
@@ -53,12 +55,23 @@ public:
     void push(int port, Packet *p);
 
 
+    // Removed parameters because they are not used
+    int configure(Vector<String>&, ErrorHandler*) { return 0; }
+
+private:
     void process_udp(Packet* p);
     void process_query(QueryPacket* query, int port);
     void process_report(ReportPacket* report, int port);
 
-    // Removed parameters because they are not used
-    int configure(Vector<String>&, ErrorHandler*) { return 0; }
+    void process_group_record(GroupRecordPacket &groupRecord, int port);
+    void update_router_state(GroupRecordPacket &groupRecord, int port);
+    void process_in_report_in(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
+    void process_in_report_ex(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
+    void process_ex_report_in(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
+    void process_ex_report_ex(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
+    void process_in_report_cex(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
+    void process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
+
 };
 
 CLICK_ENDDECLS

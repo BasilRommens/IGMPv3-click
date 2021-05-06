@@ -2,7 +2,7 @@
 #define CLICK_Constants_HH
 
 namespace Constants {
-    *  RFC3376, 4.2.12
+    // RFC3376, 4.2.12
     extern int MODE_IS_INCLUDE;
     extern int MODE_IS_EXCLUDE;
     extern int CHANGE_TO_INCLUDE_MODE;
@@ -12,7 +12,7 @@ namespace Constants {
 }
 
 namespace Defaults {
-    *  RFC 3376, section 8
+    // RFC 3376, section 8
     /**
      * 8.1. Robustness Variable
      *
