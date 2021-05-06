@@ -15,21 +15,21 @@ namespace Defaults {
     // RFC 3376, section 8
     /**
      * 8.1. Robustness Variable
-The Robustness Variable allows tuning for the expected packet loss on
-a network. If a network is expected to be lossy, the Robustness
-Variable may be increased. IGMP is robust to (Robustness Variable -
-1) packet losses. The Robustness Variable MUST NOT be zero, and
-SHOULD NOT be one. Default: 2
+     * The Robustness Variable allows tuning for the expected packet loss on
+     * a network. If a network is expected to be lossy, the Robustness
+     * Variable may be increased. IGMP is robust to (Robustness Variable -
+     * 1) packet losses. The Robustness Variable MUST NOT be zero, and
+     * SHOULD NOT be one. Default: 2
      */
     extern int ROBUSTNESS_VARIABLE;
-/**
- * 8.2. Query Interval
-The Query Interval is the interval between General Queries sent by
-the Querier. Default: 125 seconds.
-By varying the [Query Interval], an administrator may tune the number
-of IGMP messages on the network; larger values cause IGMP Queries to
-be sent less often.
- */
+    /**
+     * 8.2. Query Interval
+     * The Query Interval is the interval between General Queries sent by
+     * the Querier. Default: 125 seconds.
+     * By varying the [Query Interval], an administrator may tune the number
+     * of IGMP messages on the network; larger values cause IGMP Queries to
+     * be sent less often.
+     */
     extern int QUERY_INTERVAL;
 
     /**
