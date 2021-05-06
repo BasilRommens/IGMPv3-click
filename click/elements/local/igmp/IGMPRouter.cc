@@ -284,7 +284,7 @@ void IGMPRouter::process_report(ReportPacket* report, int port)
             to_ex(groupRecord.multicast_address, port);
             // Router state
             // Timer >0
-            Vector<SourceRecord*> X = router_record.second->source_records;
+            Vector<SourceRecord*>X = router_record.second->source_records;
             // Timer =0
             Vector<SourceRecord*>Y = Vector<SourceRecord*>();
             // Report record
