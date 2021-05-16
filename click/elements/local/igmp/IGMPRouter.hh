@@ -22,7 +22,6 @@ class QueryPacket;
 class ReportPacket;
 class GroupRecordPacket;
 
-
 class IGMPRouter : public Element {
 public:
     IGMPRouter();
@@ -58,6 +57,11 @@ public:
     // Removed parameters because they are not used
     int configure(Vector<String>&, ErrorHandler*) { return 0; }
 
+    static void send_scheduled_query(Timer*, void* thunk); // static to make it possible to use it in timers
+    void send_to_all_group_members(Packet* packet, in_addr group_address);
+
+    Packet* create_group_specific_query_packet(in_addr multicast_address);
+
 private:
     void process_udp(Packet* p);
     void process_query(QueryPacket* query, int port);
@@ -72,6 +76,28 @@ private:
     void process_in_report_cex(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
     void process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
 
+    // Sends general query to all attached network
+    void send_general_queries();
+    // Sends general query to specific group (port)
+    void send_general_query(int group);
+    // Returns all ports on which someone is interested in reception of given multicast address
+    Vector<int> get_group_members(in_addr multicast_address);
+
+    void send_group_specific_query(in_addr multicast_address);
+
+    void handle_expired_group_timer(int port, in_addr group_addr);
+    void change_group_to_exclude(int port, in_addr group_addr);
+    Vector<int> get_attached_networks();
+
+
+};
+
+
+struct ScheduledQueryTimerArgs {
+    // Because somehow multiple arguments aren't supported in a timer
+    in_addr multicast_address;
+    Packet* packet_to_send;
+    IGMPRouter* router;
 };
 
 CLICK_ENDDECLS

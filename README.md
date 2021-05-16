@@ -28,3 +28,8 @@ read client22/igmp.tables
 write client22/igmp.leave 225.1.1.1
 read client22/igmp.tables
 ```
+You can also send commands without first having to telnet.
+```shell
+echo "write client22/igmp.join 225.1.1.1" | telnet localhost 10004
+echo "write client22/igmp.leave 225.1.1.1" | telnet localhost 10004
+```

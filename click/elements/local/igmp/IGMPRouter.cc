@@ -235,7 +235,7 @@ IGMPRouter::process_in_report_ex(GroupRecordPacket &groupRecord, int port, Pair<
 
 
 void
-IGMPRouter::process_ex_report_in(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record){
+IGMPRouter::process_ex_report_in(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record) {
 
     // New state Exclude(X+A, Y-A)
     // TODO: Report is include, moet dit in ons geval dan geen to_in worden???
@@ -254,7 +254,7 @@ IGMPRouter::process_ex_report_in(GroupRecordPacket &groupRecord, int port, Pair<
 
 
 void
-IGMPRouter::process_ex_report_ex(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record){
+IGMPRouter::process_ex_report_ex(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record) {
     // New state Exclude(A-Y, Y*A)
     to_ex(groupRecord.multicast_address, port);
     // Router state
@@ -283,6 +283,26 @@ IGMPRouter::process_in_report_cex(GroupRecordPacket &groupRecord, int port, Pair
 
 void
 IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record) {
+    /**
+     * When a group membership is terminated at a system or traffic from a
+     * particular source is no longer desired,
+     */
+     click_chatter("Received request to leave");
+
+    /**
+     * a multicast router must query
+     * for other members of the group or listeners of the source before
+     * deleting the group (or source) and pruning its traffic.
+     *
+     * Group-Specific Queries are
+     * sent when a router receives a State-Change record indicating a system
+     * is leaving a group.
+     */
+
+    send_group_specific_query(groupRecord.multicast_address);
+    return;
+
+    // TODO: Hier nog niet direct to ex gaan, maar eerst een group_specific_query sturen
     // New state Exclude (X+A, Y-A)
     to_ex(groupRecord.multicast_address, port);
     // Router state
@@ -325,23 +345,88 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
     }
 }
 
+Vector<int> IGMPRouter::get_group_members(in_addr multicast_address){
+    Vector <Pair<int, GroupState *>> port_groups = get_group_state_list(multicast_address);
+    Vector<int> members;
+    for (auto port_group: port_groups) {
+        if (port_group.second->filter_mode == Constants::MODE_IS_EXCLUDE) {
+            // still interested, so it's a member
+            members.push_back(port_group.first);
+        }
+    }
+    return members;
+}
+
+Packet* IGMPRouter::create_group_specific_query_packet(in_addr multicast_address){
+    Query query = Query();
+    query.setGroupAddress(multicast_address);
+
+    Packet* query_packet = query.createPacket();
+
+    IPAddress query_address = IPAddress(multicast_address);
+    query_packet->set_dst_ip_anno(query_address);
+
+    return query_packet;
+}
+
+void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
+    /**
+     * When a table action "Send Q(G)" is encountered, then the group timer
+     * must be lowered to LMQT. The router must then immediately send a
+     * group specific query as well as schedule [Last Member Query Count -
+     * 1] query retransmissions to be sent every [Last Member Query
+     * Interval] over [Last Member Query Time].
+     * When transmitting a group specific query, if the group timer is
+     * larger than LMQT, the "Suppress Router-Side Processing" bit is set in
+     * the query message.
+     */
+    // Set group timer to LMQT
+    // TODO
+
+    // Maak query pakketje
+    Packet* query_packet = create_group_specific_query_packet(multicast_address);
+
+
+    // Send query -> Done as 0th retransmission
+    // send_to_all_group_members(query_packet, multicast_address);
+
+    // Schedule query retransmissions
+    int robustness_variable = 5; // TODO
+    for (int query_num = 0; query_num < robustness_variable; ++query_num) {
+        ScheduledQueryTimerArgs* timerArgs = new ScheduledQueryTimerArgs();
+        timerArgs->multicast_address = multicast_address;
+        timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address);
+        timerArgs->router = this;
+
+        Timer *timer = new Timer(&IGMPRouter::send_scheduled_query, timerArgs);
+        timer->initialize(this);
+        timer->schedule_after_msec(1000*query_num); // TODO: set 1000 to the right retransmission time
+    }
+
+}
+
+void IGMPRouter::send_to_all_group_members(Packet* packet, in_addr group_address){
+    for (int port: get_group_members(group_address)) {
+        output(port).push(packet);
+        click_chatter("Query sent on port %d", port);
+    }
+}
+
+void IGMPRouter::send_scheduled_query(Timer*, void* thunk) {
+    ScheduledQueryTimerArgs* args = static_cast<ScheduledQueryTimerArgs *>(thunk);
+
+    IGMPRouter* router = args->router;
+    Packet* packet = args->packet_to_send;
+    in_addr address = args->multicast_address;
+
+    router->send_to_all_group_members(packet, address);
+}
+
 void IGMPRouter::process_group_record(GroupRecordPacket &groupRecord, int port) {
 
     // TODO check if this is the right implementation
     int report_recd_mode = groupRecord.record_type;
     update_router_state(groupRecord, port);
-
-    /**
-     * When a group membership is terminated at a system or traffic from a
-     * particular source is no longer desired,
-     */
-    if (report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
-        /**
-         * a multicast router must query
-         * for other members of the group or listeners of the source before
-         * deleting the group (or source) and pruning its traffic.
-         */
-    }
 
 
 //        // Action tabel rfc3376 p.29 (dingen die rekenen op timer nog niet geimplementeerd)
@@ -387,7 +472,9 @@ void IGMPRouter::push(int port, Packet *p) {
 
     if (port == 3) {
         process_udp(p);
+        return;
     }
+    click_chatter("It's not udp");
 
     ReportPacket *report = (ReportPacket *) p->data();
 
@@ -401,6 +488,49 @@ void IGMPRouter::push(int port, Packet *p) {
         process_query(query, port);
         return;
     }
+}
+
+// WIP
+Vector<int> IGMPRouter::get_attached_networks(){
+    // TODO: klopt dit?
+    Vector<int> attached_networks;
+    attached_networks.push_back(0);
+    attached_networks.push_back(1);
+    attached_networks.push_back(2);
+    return attached_networks;
+}
+
+// WIP
+void IGMPRouter::send_general_queries(){
+    for(auto group: get_attached_networks()){
+        send_general_query(group);
+    }
+}
+
+// WIP
+void IGMPRouter::send_general_query(int group){
+    Query query = Query();
+    // TODO
+    // Was hierbij multicast addr ni 0?
+//    query.setGroupAddress(multicast_addressd);
+}
+
+// WIP
+void IGMPRouter::change_group_to_exclude(int port, in_addr group_addr){
+    Pair < int, GroupState * > groupState = get_group_state(group_addr, port);
+    groupState.second->filter_mode = Constants::MODE_IS_EXCLUDE;
+}
+
+// WIP
+void IGMPRouter::handle_expired_group_timer(int port, in_addr group_addr){
+    /**
+     * A group timer expiring when a router filter-mode for the group is
+     * EXCLUDE means there are no listeners on the attached network in
+     * EXCLUDE mode. At this point, a router will transition to INCLUDE
+     * filter-mode. Section 6.5 describes the actions taken when a group
+     * timer expires while in EXCLUDE mode. (rfc3376, 6.2.2)
+     */
+     change_group_to_exclude(port, group_addr);
 }
 
 CLICK_ENDDECLS

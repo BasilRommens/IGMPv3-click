@@ -122,6 +122,7 @@ struct Query {
     WritablePacket *createPacket();
 
     int size();
+
 private:
     /**
      * Converts a code to a value as described in RFC 3376 section 4.1.7. and 4.1.1.
