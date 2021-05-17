@@ -315,6 +315,58 @@ IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair
     // (A)=GMI, Send Q(G, X-A), Send Q(G)
 }
 
+void IGMPRouter::handle_expired_group_timer(Timer* timer, void* thunk) {
+    /**
+     * A group timer expiring when a router filter-mode for the group is
+     * EXCLUDE means there are no listeners on the attached network in
+     * EXCLUDE mode. At this point, a router will transition to INCLUDE
+     * filter-mode. Section 6.5 describes the actions taken when a group
+     * timer expires while in EXCLUDE mode. (rfc3376, 6.2.2)
+     */
+    click_chatter("Group timer possibly expired");
+    // Get the args
+    GroupTimerArgs* args = static_cast<GroupTimerArgs *>(thunk);
+
+    IGMPRouter* router = args->router;
+    int port = args->port;
+    in_addr address = args->multicast_address;
+
+    // Get the group state
+    Pair < int, GroupState * > router_record = router->get_group_state(address, port);
+    GroupState* groupState = router_record.second;
+
+    // Check if this expired timer is the most recent timer
+    if (groupState->group_timer != timer){
+        // There has been set a new timer, this one can be ignored
+        return;
+    }
+
+    // Timer has expired, group can leave
+    groupState->filter_mode = Constants::MODE_IS_INCLUDE;
+
+    click_chatter("Group left :-(");
+}
+
+void IGMPRouter::set_group_timer_gmi(in_addr multicast_address, int port) {
+    // Updates the timer of the group with given multicast_addrefss on given port to the Group Membership Interval
+    Pair < int, GroupState * > router_record = get_group_state(multicast_address, port);
+    GroupState* groupState = router_record.second;
+
+    GroupTimerArgs* timerArgs = new GroupTimerArgs();
+    timerArgs->multicast_address = multicast_address;
+    timerArgs->port = port;
+    timerArgs->router = this;
+
+    Timer *timer = new Timer(&IGMPRouter::handle_expired_group_timer, timerArgs);
+    timer->initialize(this);
+    timer->schedule_after_msec(10000); // TODO: After GMI
+
+    groupState->group_timer = timer;
+
+    click_chatter("Set group timer to GMI");
+
+}
+
 void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
 
     int report_recd_mode = groupRecord.record_type;
@@ -326,10 +378,12 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
         process_in_report_in(groupRecord, port, router_record);
     } else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::MODE_IS_EXCLUDE) {
         process_in_report_ex(groupRecord, port, router_record);
+        set_group_timer_gmi(groupRecord.multicast_address, port);
     } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::MODE_IS_INCLUDE) {
         process_ex_report_in(groupRecord, port, router_record);
     } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::MODE_IS_EXCLUDE) {
         process_in_report_ex(groupRecord, port, router_record);
+        set_group_timer_gmi(groupRecord.multicast_address, port);
     } // RFC 3376 section 6.4
     else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
         process_in_report_cex(groupRecord, port, router_record);
@@ -521,17 +575,6 @@ void IGMPRouter::change_group_to_exclude(int port, in_addr group_addr){
     groupState.second->filter_mode = Constants::MODE_IS_EXCLUDE;
 }
 
-// WIP
-void IGMPRouter::handle_expired_group_timer(int port, in_addr group_addr){
-    /**
-     * A group timer expiring when a router filter-mode for the group is
-     * EXCLUDE means there are no listeners on the attached network in
-     * EXCLUDE mode. At this point, a router will transition to INCLUDE
-     * filter-mode. Section 6.5 describes the actions taken when a group
-     * timer expires while in EXCLUDE mode. (rfc3376, 6.2.2)
-     */
-     change_group_to_exclude(port, group_addr);
-}
 
 CLICK_ENDDECLS
 EXPORT_ELEMENT(IGMPRouter)

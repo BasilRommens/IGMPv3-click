@@ -40,7 +40,7 @@ public:
         source_records = Vector<SourceRecord *>();
     };
     in_addr multicast_address;
-    int group_timer;
+    Timer* group_timer;
     int filter_mode;
 
     /**

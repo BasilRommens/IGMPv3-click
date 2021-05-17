@@ -62,6 +62,8 @@ public:
 
     Packet* create_group_specific_query_packet(in_addr multicast_address);
 
+    static void handle_expired_group_timer(Timer* timer, void* thunk);
+
 private:
     void process_udp(Packet* p);
     void process_query(QueryPacket* query, int port);
@@ -85,9 +87,10 @@ private:
 
     void send_group_specific_query(in_addr multicast_address);
 
-    void handle_expired_group_timer(int port, in_addr group_addr);
     void change_group_to_exclude(int port, in_addr group_addr);
     Vector<int> get_attached_networks();
+
+    void set_group_timer_gmi(in_addr multicast_address, int port);
 
 
 };
@@ -97,6 +100,12 @@ struct ScheduledQueryTimerArgs {
     // Because somehow multiple arguments aren't supported in a timer
     in_addr multicast_address;
     Packet* packet_to_send;
+    IGMPRouter* router;
+};
+
+struct GroupTimerArgs {
+    in_addr multicast_address;
+    int port;
     IGMPRouter* router;
 };
 
