@@ -287,7 +287,7 @@ IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair
      * When a group membership is terminated at a system or traffic from a
      * particular source is no longer desired,
      */
-     click_chatter("Received request to leave");
+    click_chatter("Received request to leave");
 
     /**
      * a multicast router must query
@@ -300,6 +300,16 @@ IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair
      */
 
     send_group_specific_query(groupRecord.multicast_address);
+    /**
+     * Similarly, when a router queries a specific group, it lowers its
+     * group timer for that group to a small interval of Last Member Query
+     * Time seconds. If any group records expressing EXCLUDE mode interest
+     * in the group are received within the interval, the group timer for
+     * the group is updated and the suggestion to the routing protocol to
+     * forward the group stands without any interruption.
+     */
+
+    set_group_timer_gmi(groupRecord.multicast_address, port);
     return;
 
     // TODO: Hier nog niet direct to ex gaan, maar eerst een group_specific_query sturen
@@ -315,7 +325,7 @@ IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair
     // (A)=GMI, Send Q(G, X-A), Send Q(G)
 }
 
-void IGMPRouter::handle_expired_group_timer(Timer* timer, void* thunk) {
+void IGMPRouter::handle_expired_group_timer(Timer *timer, void *thunk) {
     /**
      * A group timer expiring when a router filter-mode for the group is
      * EXCLUDE means there are no listeners on the attached network in
@@ -325,18 +335,18 @@ void IGMPRouter::handle_expired_group_timer(Timer* timer, void* thunk) {
      */
     click_chatter("Group timer possibly expired");
     // Get the args
-    GroupTimerArgs* args = static_cast<GroupTimerArgs *>(thunk);
+    GroupTimerArgs *args = static_cast<GroupTimerArgs *>(thunk);
 
-    IGMPRouter* router = args->router;
+    IGMPRouter *router = args->router;
     int port = args->port;
     in_addr address = args->multicast_address;
 
     // Get the group state
     Pair < int, GroupState * > router_record = router->get_group_state(address, port);
-    GroupState* groupState = router_record.second;
+    GroupState *groupState = router_record.second;
 
     // Check if this expired timer is the most recent timer
-    if (groupState->group_timer != timer){
+    if (groupState->group_timer != timer) {
         // There has been set a new timer, this one can be ignored
         return;
     }
@@ -347,24 +357,36 @@ void IGMPRouter::handle_expired_group_timer(Timer* timer, void* thunk) {
     click_chatter("Group left :-(");
 }
 
-void IGMPRouter::set_group_timer_gmi(in_addr multicast_address, int port) {
-    // Updates the timer of the group with given multicast_addrefss on given port to the Group Membership Interval
+void IGMPRouter::set_group_timer(in_addr multicast_address, int port, int duration) {
+    // Updates the timer of the group with given multicast_addrefss on given port to given time
+    // Duration should be seconds
     Pair < int, GroupState * > router_record = get_group_state(multicast_address, port);
-    GroupState* groupState = router_record.second;
+    GroupState *groupState = router_record.second;
 
-    GroupTimerArgs* timerArgs = new GroupTimerArgs();
+    GroupTimerArgs *timerArgs = new GroupTimerArgs();
     timerArgs->multicast_address = multicast_address;
     timerArgs->port = port;
     timerArgs->router = this;
 
     Timer *timer = new Timer(&IGMPRouter::handle_expired_group_timer, timerArgs);
     timer->initialize(this);
-    timer->schedule_after_msec(10000); // TODO: After GMI
+    timer->schedule_after_msec(duration * 1000); // TODO: After GMI
 
     groupState->group_timer = timer;
+}
 
+void IGMPRouter::set_group_timer_lmqt(in_addr multicast_address, int port) {
+    // Updates the timer of the group with given multicast_addrefss on given port to the last member query time
+    int lmqt = 5; // TODO: Real lmqt
+    set_group_timer(multicast_address, port, lmqt);
+    click_chatter("Set group timer to LMQT");
+}
+
+void IGMPRouter::set_group_timer_gmi(in_addr multicast_address, int port) {
+    // Updates the timer of the group with given multicast_addrefss on given port to the Group Membership Interval
+    int gmi = 10000; // TODO: Real GMI
+    set_group_timer(multicast_address, port, gmi);
     click_chatter("Set group timer to GMI");
-
 }
 
 void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
@@ -383,13 +405,13 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
         process_ex_report_in(groupRecord, port, router_record);
     } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::MODE_IS_EXCLUDE) {
         process_in_report_ex(groupRecord, port, router_record);
-        set_group_timer_gmi(groupRecord.multicast_address, port);
     } // RFC 3376 section 6.4
     else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
         process_in_report_cex(groupRecord, port, router_record);
     } else if (router_state == Constants::MODE_IS_EXCLUDE &&
                report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
         process_ex_report_cin(groupRecord, port, router_record);
+        set_group_timer_lmqt(groupRecord.multicast_address, port);
     } else {
         click_chatter("\e[1;93m%-6s %d %-6s %d \e[m",
                       "Hmmm, not found. Router is in state",
@@ -399,7 +421,7 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
     }
 }
 
-Vector<int> IGMPRouter::get_group_members(in_addr multicast_address){
+Vector<int> IGMPRouter::get_group_members(in_addr multicast_address) {
     Vector <Pair<int, GroupState *>> port_groups = get_group_state_list(multicast_address);
     Vector<int> members;
     for (auto port_group: port_groups) {
@@ -411,11 +433,11 @@ Vector<int> IGMPRouter::get_group_members(in_addr multicast_address){
     return members;
 }
 
-Packet* IGMPRouter::create_group_specific_query_packet(in_addr multicast_address){
+Packet *IGMPRouter::create_group_specific_query_packet(in_addr multicast_address) {
     Query query = Query();
     query.setGroupAddress(multicast_address);
 
-    Packet* query_packet = query.createPacket();
+    Packet *query_packet = query.createPacket();
 
     IPAddress query_address = IPAddress(multicast_address);
     query_packet->set_dst_ip_anno(query_address);
@@ -438,7 +460,7 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
     // TODO
 
     // Maak query pakketje
-    Packet* query_packet = create_group_specific_query_packet(multicast_address);
+    Packet *query_packet = create_group_specific_query_packet(multicast_address);
 
 
     // Send query -> Done as 0th retransmission
@@ -447,30 +469,30 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
     // Schedule query retransmissions
     int robustness_variable = 5; // TODO
     for (int query_num = 0; query_num < robustness_variable; ++query_num) {
-        ScheduledQueryTimerArgs* timerArgs = new ScheduledQueryTimerArgs();
+        ScheduledQueryTimerArgs *timerArgs = new ScheduledQueryTimerArgs();
         timerArgs->multicast_address = multicast_address;
         timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address);
         timerArgs->router = this;
 
         Timer *timer = new Timer(&IGMPRouter::send_scheduled_query, timerArgs);
         timer->initialize(this);
-        timer->schedule_after_msec(1000*query_num); // TODO: set 1000 to the right retransmission time
+        timer->schedule_after_msec(1000 * query_num); // TODO: set 1000 to the right retransmission time
     }
 
 }
 
-void IGMPRouter::send_to_all_group_members(Packet* packet, in_addr group_address){
+void IGMPRouter::send_to_all_group_members(Packet *packet, in_addr group_address) {
     for (int port: get_group_members(group_address)) {
         output(port).push(packet);
         click_chatter("Query sent on port %d", port);
     }
 }
 
-void IGMPRouter::send_scheduled_query(Timer*, void* thunk) {
-    ScheduledQueryTimerArgs* args = static_cast<ScheduledQueryTimerArgs *>(thunk);
+void IGMPRouter::send_scheduled_query(Timer *, void *thunk) {
+    ScheduledQueryTimerArgs *args = static_cast<ScheduledQueryTimerArgs *>(thunk);
 
-    IGMPRouter* router = args->router;
-    Packet* packet = args->packet_to_send;
+    IGMPRouter *router = args->router;
+    Packet *packet = args->packet_to_send;
     in_addr address = args->multicast_address;
 
     router->send_to_all_group_members(packet, address);
@@ -545,7 +567,7 @@ void IGMPRouter::push(int port, Packet *p) {
 }
 
 // WIP
-Vector<int> IGMPRouter::get_attached_networks(){
+Vector<int> IGMPRouter::get_attached_networks() {
     // TODO: klopt dit?
     Vector<int> attached_networks;
     attached_networks.push_back(0);
@@ -555,14 +577,14 @@ Vector<int> IGMPRouter::get_attached_networks(){
 }
 
 // WIP
-void IGMPRouter::send_general_queries(){
-    for(auto group: get_attached_networks()){
+void IGMPRouter::send_general_queries() {
+    for (auto group: get_attached_networks()) {
         send_general_query(group);
     }
 }
 
 // WIP
-void IGMPRouter::send_general_query(int group){
+void IGMPRouter::send_general_query(int group) {
     Query query = Query();
     // TODO
     // Was hierbij multicast addr ni 0?
@@ -570,7 +592,7 @@ void IGMPRouter::send_general_query(int group){
 }
 
 // WIP
-void IGMPRouter::change_group_to_exclude(int port, in_addr group_addr){
+void IGMPRouter::change_group_to_exclude(int port, in_addr group_addr) {
     Pair < int, GroupState * > groupState = get_group_state(group_addr, port);
     groupState.second->filter_mode = Constants::MODE_IS_EXCLUDE;
 }

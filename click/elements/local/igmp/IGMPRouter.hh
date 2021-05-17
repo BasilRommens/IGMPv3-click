@@ -90,8 +90,9 @@ private:
     void change_group_to_exclude(int port, in_addr group_addr);
     Vector<int> get_attached_networks();
 
+    void set_group_timer(in_addr multicast_address, int port, int duration);
     void set_group_timer_gmi(in_addr multicast_address, int port);
-
+    void set_group_timer_lmqt(in_addr multicast_address, int port);
 
 };
 
