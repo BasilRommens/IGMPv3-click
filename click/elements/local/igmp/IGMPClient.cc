@@ -12,6 +12,7 @@
 #include "constants.hh"
 #include "report.hh"
 #include "query.hh"
+#include "helper.hh"
 
 CLICK_DECLS
 
@@ -166,7 +167,7 @@ void IGMPClient::push(int port, Packet* p)
     }
     else {
         click_chatter("It doesn't contain a transport header");
-        QueryPacket* query = (QueryPacket*) p->data();
+        QueryPacket* query = (QueryPacket*) (get_data_offset_4(p));
         if (query->type==Constants::QUERY_TYPE) {
             process_query(query, port);
             return;

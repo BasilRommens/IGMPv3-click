@@ -131,6 +131,7 @@ private:
 };
 
 struct QueryPacket {
+    uint32_t  RouterAlertOption;
     uint8_t type = 0x11;
     uint8_t maxRespCode;
     uint16_t checksum;

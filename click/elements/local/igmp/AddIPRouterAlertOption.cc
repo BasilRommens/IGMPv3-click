@@ -2,14 +2,9 @@
 
 #include <click/config.h>
 #include <click/args.hh>
-#include <clicknet/ether.h>
 #include <click/error.hh>
 #include <click/packet_anno.hh>
 #include <click/timer.hh>
-
-#include "constants.hh"
-#include "report.hh"
-#include "query.hh"
 
 #include "AddIPRouterAlertOption.hh"
 
@@ -24,7 +19,11 @@ int AddIPRouterAlertOption::configure(Vector<String>& conf, ErrorHandler* errh)
     return 0;
 }
 
-void AddIPRouterAlertOption::push(int port, Packet* p) {
+void AddIPRouterAlertOption::push(int, Packet* p)
+{
+    click_ip* ip_header = (click_ip*) p->data();
+    ip_header->ip_v += 0x01;
+    output(0).push(p);
     return;
 }
 

@@ -148,6 +148,7 @@ struct GroupRecordPacket {
 };
 
 struct ReportPacket {
+    uint32_t  RouterAlertOption;
     uint8_t type = 0x22;
     uint8_t reserved1 = 0x0;
     uint16_t checksum;

@@ -145,10 +145,10 @@ int Query::size()
 WritablePacket* Query::createPacket()
 {
     // Room for the IP header and Ether header which must be added later by
-    //  another element
+    // another element
     int headroom = sizeof(click_ip)+sizeof(click_ether)+4;
 
-    WritablePacket* q = Packet::make(headroom, 0, this->size(), 0);
+    WritablePacket* q = Packet::make(headroom, 0, this->size()+4, 0);
     if (!q) {
         return 0;
     }
@@ -170,6 +170,7 @@ WritablePacket* Query::createPacket()
     }
 
     query->checksum = click_in_cksum(q->data(), q->length());
+    query->RouterAlertOption = htonl(0x94040000);
     return q;
 }
 

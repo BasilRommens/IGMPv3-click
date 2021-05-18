@@ -2,7 +2,9 @@
 
 CLICK_DECLS
 
-GroupRecord::GroupRecord(uint8_t record_type, in_addr multicast_address, Vector<in_addr> source_addresses) : record_type(record_type), multicast_address(multicast_address), source_addresses(source_addresses) {
+GroupRecord::GroupRecord(uint8_t record_type, in_addr multicast_address, Vector<in_addr> source_addresses)
+        : record_type(record_type), multicast_address(multicast_address), source_addresses(source_addresses)
+{
     num_sources = htons(source_addresses.size());
 }
 
@@ -56,7 +58,7 @@ Packet* Report::createPacket()
     // another element
     int headroom = sizeof(click_ip)+sizeof(click_ether)+4;
 
-    WritablePacket* q = Packet::make(headroom, 0, this->size(), 0);
+    WritablePacket* q = Packet::make(headroom, 0, this->size()+4, 0);
     if (!q) {
         return 0;
     }
@@ -91,6 +93,7 @@ Packet* Report::createPacket()
     }
 
     report->checksum = click_in_cksum(q->data(), q->length());
+    report->RouterAlertOption = htonl(0x94040000);
     return q;
 }
 

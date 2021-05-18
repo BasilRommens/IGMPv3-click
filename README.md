@@ -20,7 +20,7 @@ cp -r referentie-oplossingen/igmp click-reference
 sudo click/scripts/setup.sh
 ```
 You can comment out the parts in the start_click.sh scripts you do
-not want to run, but be sure to use all the elements
+not want to run, but be sure to use all the elements.
 **Run own implementation**
 ```shell
 cd click/scripts

@@ -50,6 +50,8 @@ elementclass Client {
 		-> igmp_packet::StripIPHeader // Will take the igmp packet inside the IP packet
 		-> igmp // The IGMP packet will be routed into the IGMP element of a client
 		-> IPEncap(2, $address:ip, DST_ANNO, TTL 1) // put the IP header on the igmp packet
+		-> AddIPRouterAlertOption
+		-> SetIPChecksum
 		-> arpq;
 
 	// The special broadcast should not be dropped, so it skips the drop broadcasts
