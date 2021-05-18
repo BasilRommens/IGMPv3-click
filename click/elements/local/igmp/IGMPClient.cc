@@ -47,9 +47,12 @@ void IGMPClient::push(int port, Packet* p)
     if (p->transport_header()) {
         if (p->udp_header()) {
             process_udp(p);
+        } else {
+            click_chatter("It's not udp here");
         }
     }
     else {
+        click_chatter("It doesn't contain a transport header");
         output(port).push(p);
     }
 }

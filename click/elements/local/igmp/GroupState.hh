@@ -21,10 +21,11 @@
 #include <click/string.hh>
 #include "constants.hh"
 
+// Isn't used in our implementation, since source list is always empty
 class SourceRecord {
 public:
     SourceRecord(in_addr source_address, int source_timer)
-            :source_address(source_address), source_timer(source_timer) { }
+            : source_address(source_address), source_timer(source_timer) {}
 
     in_addr source_address;
     int source_timer;
@@ -34,15 +35,22 @@ public:
 class GroupState {
 public:
     GroupState(in_addr multicast_address)
-            :multicast_address(multicast_address)
-    {
+            : multicast_address(multicast_address) {
         filter_mode = Constants::MODE_IS_INCLUDE;
-        source_records = Vector<SourceRecord*>();
+        source_records = Vector<SourceRecord *>();
     };
     in_addr multicast_address;
-    int group_timer;
+    Timer* group_timer;
     int filter_mode;
-    Vector<SourceRecord*> source_records;
+
+    /**
+     * If all sources within a given group are desired (wat altijd het geval is in onze implementatie), an empty source
+     * record list is kept with filter-mode set to EXCLUDE. This means
+     * hosts on this network want all sources for this group to be
+     * forwarded. This is the IGMPv3 equivalent to a IGMPv1 or IGMPv2 group
+     * join.
+     */
+    Vector<SourceRecord *> source_records;
 };
 
 #endif
