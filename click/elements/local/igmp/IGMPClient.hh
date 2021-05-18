@@ -76,17 +76,18 @@
 #include "InterfaceMulticastTable.hh"
 
 CLICK_DECLS
-//
+
+class QueryPacket;
+class ReportPacket;
+class GroupRecordPacket;
+
 class IGMPClient : public Element {
 public:
     IGMPClient();
-
     ~IGMPClient();
 
     const char *class_name() const { return "IGMPClient"; }
-
     const char *port_count() const { return "2/3"; }
-
     const char *processing() const { return PUSH; }
 
     int configure(Vector <String> &conf, ErrorHandler *errh);
@@ -94,6 +95,8 @@ public:
     void push(int port, Packet *p);
 
     void process_udp(Packet *p);
+    void process_query(QueryPacket *p, int port);
+    void process_other_packet(Packet *p, int port);
 
     void IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
 

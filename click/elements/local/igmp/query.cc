@@ -146,7 +146,7 @@ WritablePacket* Query::createPacket()
 {
     // Room for the IP header and Ether header which must be added later by
     //  another element
-    int headroom = sizeof(click_ip)+sizeof(click_ether);
+    int headroom = sizeof(click_ip)+sizeof(click_ether)+4;
 
     WritablePacket* q = Packet::make(headroom, 0, this->size(), 0);
     if (!q) {

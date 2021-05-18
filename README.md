@@ -11,11 +11,24 @@ userlevel/click test_project/temp.click
 ```
 
 ## Running on vm
+**Setup**
 ```shell
 rm -rf click/scripts/
 cp -r opgaven/igmp/scripts click/scripts
+rm -rf click-reference
+cp -r referentie-oplossingen/igmp click-reference
 sudo click/scripts/setup.sh
+```
+You can comment out the parts in the start_click.sh scripts you do
+not want to run, but be sure to use all the elements
+**Run own implementation**
+```shell
 cd click/scripts
+sudo ./start_click.sh
+```
+**Run reference implementation**
+```shell
+cd click-reference/solution
 sudo ./start_click.sh
 ```
 

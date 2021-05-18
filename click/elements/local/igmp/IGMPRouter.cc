@@ -11,7 +11,6 @@
 #include "IGMPRouter.hh"
 #include "constants.hh"
 #include "report.hh"
-
 #include "query.hh"
 
 /**
