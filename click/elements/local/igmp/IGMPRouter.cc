@@ -11,7 +11,6 @@
 #include "IGMPRouter.hh"
 #include "constants.hh"
 #include "report.hh"
-
 #include "query.hh"
 
 /**
@@ -467,8 +466,7 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
     // send_to_all_group_members(query_packet, multicast_address);
 
     // Schedule query retransmissions
-    int robustness_variable = 5; // TODO
-    for (int query_num = 0; query_num < robustness_variable; ++query_num) {
+    for (int query_num = 0; query_num < Defaults::ROBUSTNESS_VARIABLE; ++query_num) {
         ScheduledQueryTimerArgs *timerArgs = new ScheduledQueryTimerArgs();
         timerArgs->multicast_address = multicast_address;
         timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address);

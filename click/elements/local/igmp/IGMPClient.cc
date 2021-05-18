@@ -11,6 +11,7 @@
 
 #include "constants.hh"
 #include "report.hh"
+#include "query.hh"
 
 CLICK_DECLS
 
@@ -28,16 +29,127 @@ int IGMPClient::configure(Vector<String>& conf, ErrorHandler* errh)
     return 0;
 }
 
-void IGMPClient::process_udp(Packet *p){
+void IGMPClient::process_udp(Packet* p)
+{
     click_chatter("It's UDP :-)");
     in_addr multicast_address;
-    if (interfaceMulticastTable->is_ex(multicast_address)){
+    if (interfaceMulticastTable->is_ex(multicast_address)) {
         // forward packet
         output(2).push(p);
-    } else {
+    }
+    else {
         // drop packet
         output(1).push(p);
     }
+}
+
+void IGMPClient::process_query(QueryPacket* p, int port)
+{
+    // References RFC 3376, section 5.2
+    /**
+     * When a system receives a Query, it does not respond immediately.
+     * Instead, it delays its response by a random amount of time, bounded
+     * by the Max Resp Time value derived from the Max Resp Code in the
+     * received Query message. A system may receive a variety of Queries on
+     * different interfaces and of different kinds (e.g., General Queries,
+     * Group-Specific Queries, and Group-and-Source-Specific Queries), each
+     * of which may require its own delayed response.
+     */
+
+    /**
+     * Before scheduling a response to a Query, the system must first
+     * consider previously scheduled pending responses and in many cases
+     * schedule a combined response. Therefore, the system must be able to
+     * maintain the following state:
+     * o A timer per interface for scheduling responses to General Queries.
+     * o A per-group and interface timer for scheduling responses to Group-
+     * Specific and Group-and-Source-Specific Queries.
+     */
+
+    /**
+     * When a new Query with the Router-Alert option arrives on an
+     * interface, provided the system has state to report, a delay for a
+     * response is randomly selected in the range (0, [Max Resp Time]) where
+     * Max Resp Time is derived from Max Resp Code in the received Query
+     * message. The following rules are then used to determine if a Report
+     * needs to be scheduled and the type of Report to schedule. The rules
+     * are considered in order and only the first matching rule is applied.
+     */
+
+    /**
+     * 1. If there is a pending response to a previous General Query
+     * scheduled sooner than the selected delay, no additional response
+     */
+
+    /**
+     * 2. If the received Query is a General Query, the interface timer is
+     * used to schedule a response to the General Query after the
+     * selected delay. Any previously pending response to a General
+     * Query is canceled.
+     */
+
+    /**
+     * 3. If the received Query is a Group-Specific Query or a Group-and-
+     * Source-Specific Query and there is no pending response to a
+     * previous Query for this group, then the group timer is used to
+     * schedule a report. If the received Query is a Group-and-Source-
+     * Specific Query, the list of queried sources is recorded to be used
+     * when generating a response.
+     */
+
+    /**
+     * 4. If there already is a pending response to a previous Query
+     * scheduled for this group, and either the new Query is a Group-
+     * Specific Query or the recorded source-list associated with the
+     * group is empty, then the group source-list is cleared and a single
+     * response is scheduled using the group timer. The new response is
+     * scheduled to be sent at the earliest of the remaining time for the
+     * pending report and the selected delay.
+     */
+
+    /**
+     * When the timer in a pending response record expires, the system
+     * transmits, on the associated interface, one or more Report messages
+     * carrying one or more Current-State Records (see section 4.2.12), as
+     * follows:
+     */
+
+    /**
+     * 1. If the expired timer is the interface timer (i.e., it is a pending
+     * response to a General Query), then one Current-State Record is
+     * sent for each multicast address for which the specified interface
+     * has reception state, as described in section 3.2. The Current-
+     * State Record carries the multicast address and its associated
+     * filter mode (MODE_IS_INCLUDE or MODE_IS_EXCLUDE) and source list.
+     * Multiple Current-State Records are packed into individual Report
+     * messages, to the extent possible.
+     */
+
+    /**
+     * 2. If the expired timer is a group timer and the list of recorded
+     * sources for the that group is empty (i.e., it is a pending
+     * response to a Group-Specific Query), then if and only if the
+     * interface has reception state for that group address, a single
+     * Current-State Record is sent for that address. The Current-State
+     * Record carries the multicast address and its associated filter
+     * mode (MODE_IS_INCLUDE or MODE_IS_EXCLUDE) and source list.
+     */
+
+    /**
+     *  If the reulting Current-State Record has an empty set of source
+     *  addresses, then no response is sent.
+     */
+
+    /**
+     * Finally, after any required Report messages have been generated, the
+     * source lists associated with any reported groups are cleared.
+     */
+    return;
+}
+
+void IGMPClient::process_other_packet(int* p, int port)
+{
+    return;
 }
 
 void IGMPClient::push(int port, Packet* p)
@@ -47,14 +159,32 @@ void IGMPClient::push(int port, Packet* p)
     if (p->transport_header()) {
         if (p->udp_header()) {
             process_udp(p);
-        } else {
+        }
+        else {
             click_chatter("It's not udp here");
         }
     }
     else {
         click_chatter("It doesn't contain a transport header");
-        output(port).push(p);
+        QueryPacket* report = (QueryPacket*) p->data();
+        if (report->type==Constants::QUERY_TYPE) {
+            process_query(report, port);
+            return;
+        }
+
+        /**
+         * (Received IGMP messages of types other than Query are silently
+         * ignored, except as required for interoperation with earlier versions
+         * of IGMP.) (RFC 3376, section 5)
+         */
+        if (report->type!=Constants::REPORT_TYPE) {
+            process_other_packet(p, port);
+            return;
+        }
     }
+    output(port).push(p);
+}
+
 }
 
 void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
