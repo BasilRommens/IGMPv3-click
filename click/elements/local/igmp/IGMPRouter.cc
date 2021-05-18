@@ -563,15 +563,15 @@ void IGMPRouter::push(int port, Packet *p) {
     }
     click_chatter("It's not udp");
 
-    ReportPacket *report = (ReportPacket *) p->data();
-
+    ReportPacket *report = (ReportPacket *) (p->data()-4);
+    click_chatter("%d", ntohl(report->RouterAlertOption));
     if (report->type == Constants::REPORT_TYPE) {
         process_report(report, port);
         return;
     }
 
-    QueryPacket *query = (QueryPacket *) p->data();
-    if (report->type == Constants::REPORT_TYPE) {
+    QueryPacket *query = (QueryPacket *) (p->data()-4);
+    if (query->type == Constants::QUERY_TYPE) {
         process_query(query, port);
         return;
     }

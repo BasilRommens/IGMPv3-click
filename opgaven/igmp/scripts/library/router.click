@@ -118,17 +118,15 @@ elementclass Router {
 		// this becomes 0001 0001 and 0010 0010. We only need to look at the last 4
 		// bits. These bits should be a minimum of 5, we clearly see that this is
 		// not the case and therefore the IP header should be faulty and filtered out.
-	    -> check_server::CheckIPHeader;
-		// TODO: Queries going out the router must be encapsulated
-		// -> IPEncap(2, $address:ip, DST_ANNO, TTL 1) // put the IP header on the igmp packet
-        // -> server_arpq;
-
+		-> check_server::CheckIPHeader;
 
 	check_server[0]
 		-> server_ttl;
 
 	check_server[1]
 		-> IPEncap(2, $client2_address:ip, DST_ANNO, TTL 1)
+		-> AddIPRouterAlertOption
+		-> SetIPChecksum
 		-> server_arpq;
 
 	rt[2]
@@ -153,6 +151,8 @@ elementclass Router {
 
     check_client1[1]
 		-> IPEncap(2, $client2_address:ip, DST_ANNO, TTL 1)
+		-> AddIPRouterAlertOption
+		-> SetIPChecksum
 		-> client1_arpq;
 
 	rt[3]
@@ -172,6 +172,8 @@ elementclass Router {
 
 	check_client2[1]
 		-> IPEncap(2, $client2_address:ip, DST_ANNO, TTL 1)
+		-> AddIPRouterAlertOption
+		-> SetIPChecksum
 		-> client2_arpq;
 
 	client2_paint[1] -> ICMPError($client2_address, redirect, host) -> rt;
