@@ -3,7 +3,9 @@ int Constants::MODE_IS_EXCLUDE = 2;
 int Constants::CHANGE_TO_INCLUDE_MODE = 3;
 int Constants::CHANGE_TO_EXCLUDE_MODE = 4;
 
+// RFC 3376, sectie 4
 int Constants::REPORT_TYPE = 0x22;
+int Constants::QUERY_TYPE = 0x11;
 
 int Defaults::ROBUSTNESS_VARIABLE = 2;
 int Defaults::QUERY_INTERVAL = 125;

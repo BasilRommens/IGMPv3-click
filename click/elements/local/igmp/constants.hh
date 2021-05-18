@@ -9,6 +9,7 @@ namespace Constants {
     extern int CHANGE_TO_EXCLUDE_MODE;
 
     extern int REPORT_TYPE;
+    extern int QUERY_TYPE;
 }
 
 namespace Defaults {

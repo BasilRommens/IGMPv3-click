@@ -147,7 +147,7 @@ void IGMPClient::process_query(QueryPacket* p, int port)
     return;
 }
 
-void IGMPClient::process_other_packet(int* p, int port)
+void IGMPClient::process_other_packet(Packet* p, int port)
 {
     return;
 }
@@ -166,9 +166,9 @@ void IGMPClient::push(int port, Packet* p)
     }
     else {
         click_chatter("It doesn't contain a transport header");
-        QueryPacket* report = (QueryPacket*) p->data();
-        if (report->type==Constants::QUERY_TYPE) {
-            process_query(report, port);
+        QueryPacket* query = (QueryPacket*) p->data();
+        if (query->type==Constants::QUERY_TYPE) {
+            process_query(query, port);
             return;
         }
 
@@ -177,7 +177,7 @@ void IGMPClient::push(int port, Packet* p)
          * ignored, except as required for interoperation with earlier versions
          * of IGMP.) (RFC 3376, section 5)
          */
-        if (report->type!=Constants::REPORT_TYPE) {
+        if (query->type!=Constants::REPORT_TYPE) {
             process_other_packet(p, port);
             return;
         }
@@ -185,7 +185,6 @@ void IGMPClient::push(int port, Packet* p)
     output(port).push(p);
 }
 
-}
 
 void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
         Vector<in_addr> source_list)
