@@ -34,6 +34,8 @@
 
 CLICK_DECLS
 
+// TODO: Querier elections to determine who must send general queries
+
 IGMPRouter::IGMPRouter() {
     group_states = Vector < Pair < int, GroupState * >> ();
 }
@@ -206,6 +208,13 @@ void IGMPRouter::process_udp(Packet *p) {
 
 void IGMPRouter::process_query(QueryPacket *query, int port) {
     click_chatter("\e[1;32m%-6s\e[m", "Received query");
+    // rfc 6.6.1
+    // if suppress router-side processing flag set -> return // TODO: Moet het dan nog query sturen? (timer sowieso niet zetten)
+
+    // send_group_specific_query(multicast_address);
+    // set_group_timer_lmqt() // TODO: Welke poort?
+
+
 }
 
 void
@@ -287,7 +296,6 @@ IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair
      * When a group membership is terminated at a system or traffic from a
      * particular source is no longer desired,
      */
-    click_chatter("Received request to leave");
 
     /**
      * a multicast router must query
@@ -299,7 +307,6 @@ IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair
      * is leaving a group.
      */
 
-    send_group_specific_query(groupRecord.multicast_address);
     /**
      * Similarly, when a router queries a specific group, it lowers its
      * group timer for that group to a small interval of Last Member Query
@@ -309,7 +316,6 @@ IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair
      * forward the group stands without any interruption.
      */
 
-    set_group_timer_gmi(groupRecord.multicast_address, port);
     return;
 
     // TODO: Hier nog niet direct to ex gaan, maar eerst een group_specific_query sturen
@@ -377,14 +383,14 @@ void IGMPRouter::set_group_timer(in_addr multicast_address, int port, int durati
 
 void IGMPRouter::set_group_timer_lmqt(in_addr multicast_address, int port) {
     // Updates the timer of the group with given multicast_addrefss on given port to the last member query time
-    int lmqt = 5; // TODO: Real lmqt
+    int lmqt = Defaults::LAST_MEMBER_QUERY_TIME; // TODO: Real lmqt
     set_group_timer(multicast_address, port, lmqt);
     click_chatter("Set group timer to LMQT");
 }
 
 void IGMPRouter::set_group_timer_gmi(in_addr multicast_address, int port) {
     // Updates the timer of the group with given multicast_addrefss on given port to the Group Membership Interval
-    int gmi = 10000; // TODO: Real GMI
+    int gmi = Defaults::GROUP_MEMBERSHIP_INTERVAL; // TODO: Real GMI
     set_group_timer(multicast_address, port, gmi);
     click_chatter("Set group timer to GMI");
 }
@@ -408,10 +414,16 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
     } // RFC 3376 section 6.4
     else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
         process_in_report_cex(groupRecord, port, router_record);
+        send_group_specific_query(groupRecord.multicast_address);
+        set_group_timer_gmi(groupRecord.multicast_address, port);
     } else if (router_state == Constants::MODE_IS_EXCLUDE &&
                report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
-        process_ex_report_cin(groupRecord, port, router_record);
-        set_group_timer_lmqt(groupRecord.multicast_address, port);
+        // TODO: to fix: Als er een query wordt ontvangen, maar andere timers nog moeten afgaan, overschrijven die timers
+        //  de GMT timer van de ontvangen query
+        // TODO: Merge queries if already pending queries
+        click_chatter("Received request to leave");
+//        process_ex_report_cin(groupRecord, port, router_record);
+        send_group_specific_query(groupRecord.multicast_address);
     } else {
         click_chatter("\e[1;93m%-6s %d %-6s %d \e[m",
                       "Hmmm, not found. Router is in state",
@@ -441,6 +453,7 @@ Packet *IGMPRouter::create_group_specific_query_packet(in_addr multicast_address
 
     IPAddress query_address = IPAddress(multicast_address);
     query_packet->set_dst_ip_anno(query_address);
+    // TODO: if group_timer larger than LMQT, set suppress router side processing bit (6.6.3.1)
 
     return query_packet;
 }
@@ -462,13 +475,12 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
     // Maak query pakketje
     Packet *query_packet = create_group_specific_query_packet(multicast_address);
 
-
     // Send query -> Done as 0th retransmission
     // send_to_all_group_members(query_packet, multicast_address);
 
     // Schedule query retransmissions
-    int robustness_variable = 5; // TODO
-    for (int query_num = 0; query_num < robustness_variable; ++query_num) {
+    click_chatter("LMQC: %d ; LMQI: %d", Defaults::LAST_MEMBER_QUERY_COUNT, Defaults::LAST_MEMBER_QUERY_INTERVAL);
+    for (int query_num = 0; query_num < Defaults::LAST_MEMBER_QUERY_COUNT; ++query_num) {
         ScheduledQueryTimerArgs *timerArgs = new ScheduledQueryTimerArgs();
         timerArgs->multicast_address = multicast_address;
         timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address);
@@ -476,7 +488,7 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
 
         Timer *timer = new Timer(&IGMPRouter::send_scheduled_query, timerArgs);
         timer->initialize(this);
-        timer->schedule_after_msec(1000 * query_num); // TODO: set 1000 to the right retransmission time
+        timer->schedule_after_msec(Defaults::LAST_MEMBER_QUERY_INTERVAL * query_num); // TODO: set 1000 to the right retransmission time
     }
 
 }
