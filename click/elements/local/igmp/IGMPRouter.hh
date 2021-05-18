@@ -79,9 +79,9 @@ private:
     void process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record);
 
     // Sends general query to all attached network
-    void send_general_queries();
+    static void send_general_queries(Timer *timer, void *thunk);
     // Sends general query to specific group (port)
-    void send_general_query(int group);
+    Packet* get_general_query();
     // Returns all ports on which someone is interested in reception of given multicast address
     Vector<int> get_group_members(in_addr multicast_address);
 
@@ -107,6 +107,10 @@ struct ScheduledQueryTimerArgs {
 struct GroupTimerArgs {
     in_addr multicast_address;
     int port;
+    IGMPRouter* router;
+};
+
+struct GeneralQueryTimerArgs {
     IGMPRouter* router;
 };
 

@@ -37,10 +37,61 @@ CLICK_DECLS
 
 IGMPRouter::IGMPRouter() {
     group_states = Vector < Pair < int, GroupState * >> ();
+
+    // TODO: wordt da hier geinitialised of in de configure functie (die er nog niet is)?
+    // Periodically sent general queries
+    GeneralQueryTimerArgs* args = new GeneralQueryTimerArgs();
+    args->router = this;
+
+    Timer *timer = new Timer(&IGMPRouter::send_general_queries, args);
+    timer->initialize(this);
+    timer->schedule_after_msec(Defaults::QUERY_INTERVAL * 1000);
 }
 
 IGMPRouter::~IGMPRouter() {
 
+}
+
+
+void IGMPRouter::send_general_queries(Timer *timer, void *thunk) {
+    // TODO: Election?
+
+    GeneralQueryTimerArgs *args = static_cast<GeneralQueryTimerArgs *>(thunk);
+    IGMPRouter *router = args->router;
+
+    // Send the queries
+    for (auto port: router->get_attached_networks()) {
+        Packet* query = router->get_general_query();
+        router->output(port).push(query);
+        click_chatter("General query sent on port %d", port);
+    }
+    // Restart the timer
+    timer->reschedule_after_msec(Defaults::QUERY_INTERVAL * 1000);
+}
+
+
+Vector<int> IGMPRouter::get_attached_networks() {
+    // TODO: klopt dit?
+    //  smh hoe moet ik een vector met een initializer list aanmaken?
+    Vector<int> attached_networks;
+    attached_networks.push_back(0);
+    attached_networks.push_back(1);
+    attached_networks.push_back(2);
+    return attached_networks;
+}
+
+Packet* IGMPRouter::get_general_query() {
+    Query query = Query();
+
+    // TODO: moest da 0 zijn? Kdenk het toch, dus aan niets gelijk stellen is hetzelfde als 0 pakt
+//    query.setGroupAddress(0);
+
+    Packet *query_packet = query.createPacket();
+
+    IPAddress query_address = IPAddress("224.0.0.22"); // TODO: Should this be to this address?
+    query_packet->set_dst_ip_anno(query_address);
+
+    return query_packet;
 }
 
 Pair<int, GroupState *> IGMPRouter::get_group_state(in_addr multicast_address, int port) {
@@ -225,7 +276,6 @@ IGMPRouter::process_in_report_in(GroupRecordPacket &groupRecord, int port, Pair<
     // Report record
     Vector < SourceRecord * > B = to_vector(groupRecord.source_addresses, groupRecord.num_sources);
     router_record.second->source_records = vector_union(A, B);
-    // TODO (B)=GMI
 }
 
 void
@@ -238,7 +288,6 @@ IGMPRouter::process_in_report_ex(GroupRecordPacket &groupRecord, int port, Pair<
     Vector < SourceRecord * > B = to_vector(groupRecord.source_addresses, groupRecord.num_sources);
     Vector < SourceRecord * > first = vector_intersection(A, B);
     Vector < SourceRecord * > second = vector_difference(B, A);
-    // TODO (B-A)-0, Delete(A-B), GroupTimer=GMI
 }
 
 
@@ -246,7 +295,6 @@ void
 IGMPRouter::process_ex_report_in(GroupRecordPacket &groupRecord, int port, Pair<int, GroupState *> &router_record) {
 
     // New state Exclude(X+A, Y-A)
-    // TODO: Report is include, moet dit in ons geval dan geen to_in worden???
     to_ex(groupRecord.multicast_address, port);
     // Router state
     // Timer >0
@@ -257,7 +305,6 @@ IGMPRouter::process_ex_report_in(GroupRecordPacket &groupRecord, int port, Pair<
     Vector < SourceRecord * > A = to_vector(groupRecord.source_addresses, groupRecord.num_sources);
     Vector < SourceRecord * > first = vector_union(X, A);
     Vector < SourceRecord * > second = vector_difference(Y, A);
-    // TODO (A) = GMI
 }
 
 
@@ -317,7 +364,8 @@ IGMPRouter::process_ex_report_cin(GroupRecordPacket &groupRecord, int port, Pair
 
     return;
 
-    // TODO: Hier nog niet direct to ex gaan, maar eerst een group_specific_query sturen
+    // Hier nog niet direct to ex gaan, maar eerst een group_specific_query sturen
+
     // New state Exclude (X+A, Y-A)
     to_ex(groupRecord.multicast_address, port);
     // Router state
@@ -375,21 +423,21 @@ void IGMPRouter::set_group_timer(in_addr multicast_address, int port, int durati
 
     Timer *timer = new Timer(&IGMPRouter::handle_expired_group_timer, timerArgs);
     timer->initialize(this);
-    timer->schedule_after_msec(duration * 1000); // TODO: After GMI
+    timer->schedule_after_msec(duration * 1000);
 
     groupState->group_timer = timer;
 }
 
 void IGMPRouter::set_group_timer_lmqt(in_addr multicast_address, int port) {
     // Updates the timer of the group with given multicast_addrefss on given port to the last member query time
-    int lmqt = Defaults::LAST_MEMBER_QUERY_TIME; // TODO: Real lmqt
+    int lmqt = Defaults::LAST_MEMBER_QUERY_TIME;
     set_group_timer(multicast_address, port, lmqt);
     click_chatter("Set group timer to LMQT");
 }
 
 void IGMPRouter::set_group_timer_gmi(in_addr multicast_address, int port) {
     // Updates the timer of the group with given multicast_addrefss on given port to the Group Membership Interval
-    int gmi = Defaults::GROUP_MEMBERSHIP_INTERVAL; // TODO: Real GMI
+    int gmi = Defaults::GROUP_MEMBERSHIP_INTERVAL;
     set_group_timer(multicast_address, port, gmi);
     click_chatter("Set group timer to GMI");
 }
@@ -417,8 +465,6 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
         set_group_timer_gmi(groupRecord.multicast_address, port);
     } else if (router_state == Constants::MODE_IS_EXCLUDE &&
                report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
-        // TODO: to fix: Als er een query wordt ontvangen, maar andere timers nog moeten afgaan, overschrijven die timers
-        //  de GMT timer van de ontvangen query
         // TODO: Merge queries if already pending queries
         click_chatter("Received request to leave");
 //        process_ex_report_cin(groupRecord, port, router_record);
@@ -577,32 +623,6 @@ void IGMPRouter::push(int port, Packet *p) {
     }
 }
 
-// WIP
-Vector<int> IGMPRouter::get_attached_networks() {
-    // TODO: klopt dit?
-    Vector<int> attached_networks;
-    attached_networks.push_back(0);
-    attached_networks.push_back(1);
-    attached_networks.push_back(2);
-    return attached_networks;
-}
-
-// WIP
-void IGMPRouter::send_general_queries() {
-    for (auto group: get_attached_networks()) {
-        send_general_query(group);
-    }
-}
-
-// WIP
-void IGMPRouter::send_general_query(int group) {
-    Query query = Query();
-    // TODO
-    // Was hierbij multicast addr ni 0?
-//    query.setGroupAddress(multicast_addressd);
-}
-
-// WIP
 void IGMPRouter::change_group_to_exclude(int port, in_addr group_addr) {
     Pair < int, GroupState * > groupState = get_group_state(group_addr, port);
     groupState.second->filter_mode = Constants::MODE_IS_EXCLUDE;
