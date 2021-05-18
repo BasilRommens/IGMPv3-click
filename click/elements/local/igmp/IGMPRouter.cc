@@ -534,7 +534,7 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
 
         Timer *timer = new Timer(&IGMPRouter::send_scheduled_query, timerArgs);
         timer->initialize(this);
-        timer->schedule_after_msec(Defaults::LAST_MEMBER_QUERY_INTERVAL * query_num * 1000); // TODO: set 1000 to the right retransmission time
+        timer->schedule_after_msec(Defaults::LAST_MEMBER_QUERY_INTERVAL * query_num * 100);
     }
 
 }
