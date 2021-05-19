@@ -100,6 +100,7 @@ void IGMPClient::process_query(QueryPacket* p, int port)
         QueryResponseArgs* args = new QueryResponseArgs();
         args->query = q;
         args->client = this;
+        args->interface = port;
 
         Timer* timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
@@ -121,6 +122,7 @@ void IGMPClient::process_query(QueryPacket* p, int port)
         QueryResponseArgs* args = new QueryResponseArgs();
         args->query = q;
         args->client = this;
+        args->interface = port;
 
         Timer* timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
@@ -141,19 +143,22 @@ void IGMPClient::process_query(QueryPacket* p, int port)
      * scheduled to be sent at the earliest of the remaining time for the
      * pending report and the selected delay.
      */
-    if (isPendingResponse(q->groupAddress) and (q->isGroupSpecificQuery() or isSourceListEmpty(q->groupAddress, port))) {
+    if (isPendingResponse(q->groupAddress)
+            and (q->isGroupSpecificQuery() or isSourceListEmpty(q->groupAddress, port))) {
         Vector<in_addr> sourceList = getSourceList(q->groupAddress, port);
         sourceList.clear();
 
         QueryResponseArgs* args = new QueryResponseArgs();
         args->query = q;
         args->client = this;
+        args->interface = port;
 
         Timer* timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
         // This should be the earliest of the remaining time for the pending
         // report and the selected delay
-        timer->schedule_after_msec(std::min(getPendingResponseTimer(q->groupAddress)->expiry(), Timestamp(delay)).msec());
+        timer->schedule_after_msec(
+                std::min(getPendingResponseTimer(q->groupAddress)->expiry(), Timestamp(delay)).msec());
 
         group_timers.push_back(std::make_tuple(port, timer, q->groupAddress));
         return;
@@ -167,12 +172,14 @@ void IGMPClient::process_other_packet(Packet*, int)
     return;
 }
 
-void IGMPClient::respondToQuery(Timer*, void* thunk)
+void IGMPClient::respondToQuery(Timer* timer, void* thunk)
 {
     QueryResponseArgs* args = static_cast<QueryResponseArgs*>(thunk);
     // retrieve the original query message
     Query* q = args->query;
     IGMPClient* client = args->client;
+    int interface = args->interface;
+    Vector<GroupRecord*>group_records_to_send{};
     // Decide what to respond
     /**
      * When the timer in a pending response record expires, the system
@@ -188,9 +195,18 @@ void IGMPClient::respondToQuery(Timer*, void* thunk)
      * has reception state, as described in section 3.2. The Current-
      * State Record carries the multicast address and its associated
      * filter mode (MODE_IS_INCLUDE or MODE_IS_EXCLUDE) and source list.
-     * Multiple Current-State Records are packed into individual Report
+     * TODO Multiple Current-State Records are packed into individual Report
      * messages, to the extent possible.
      */
+    if (client->isInterfaceTimer(timer)) {
+        for (auto interface_record: client->interfaceMulticastTable->records) {
+            // TODO fix the correct interface records
+            // send current state record
+            GroupRecord* groupRecord = client->createCurrentStateRecord(q->groupAddress, interface_record->filter_mode,
+                    interface_record->source_list);
+            group_records_to_send.push_back(groupRecord);
+        }
+    }
 
     /**
      * 2. If the expired timer is a group timer and the list of recorded
@@ -201,17 +217,44 @@ void IGMPClient::respondToQuery(Timer*, void* thunk)
      * Record carries the multicast address and its associated filter
      * mode (MODE_IS_INCLUDE or MODE_IS_EXCLUDE) and source list.
      */
+    if (client->isGroupTimer(timer) and client->isSourceListEmpty(q->groupAddress, interface)) {
+        for (auto interface_record: client->interfaceMulticastTable->records) {
+            if (interface_record->multicast_address == q->groupAddress) {
+                GroupRecord* groupRecord = client->createCurrentStateRecord(q->groupAddress, interface_record->filter_mode, interface_record->source_list);
+                group_records_to_send.push_back(groupRecord);
+            }
+        }
+    }
 
     /**
      *  If the resulting Current-State Record has an empty set of source
      *  addresses, then no response is sent.
      */
+    for (auto group_record: group_records_to_send) {
+        if (group_record->isSourceAddressesEmpty()) {
+            // Do nothing
+            continue;
+        }
+        Report* report = new Report();
+        report->addGroupRecord(group_record);
+        // Generate the packet
+        Packet* p = report->createPacket();
+        // Send the packet
+        client->output(interface).push(p);
+    }
 
     /**
      * Finally, after any required Report messages have been generated, the
      * source lists associated with any reported groups are cleared.
      */
-//    removeReportedGroups();
+    for (auto group_record: group_records_to_send) {
+        for (auto &interface_record: client->interfaceMulticastTable->records) {
+            if (group_record->multicast_address == interface_record->multicast_address) {
+                interface_record->source_list.clear();
+                break;
+            }
+        }
+    }
 }
 
 Timestamp IGMPClient::getShortestGeneralPendingResponse(int interface)
@@ -233,55 +276,93 @@ bool IGMPClient::isShortestGeneralPendingResponse(int interface, Timestamp delay
     return getShortestGeneralPendingResponse(interface)>delay;
 }
 
-bool IGMPClient::isPendingResponse(in_addr group_address) {
+bool IGMPClient::isPendingResponse(in_addr group_address)
+{
     for (auto element: group_timers) {
-        if (std::get<2>(element) == group_address) {
+        if (std::get<2>(element)==group_address) {
             return true;
         }
     }
     return false;
 }
 
-bool IGMPClient::isSourceListEmpty(in_addr group_address, int interface) {
+bool IGMPClient::isSourceListEmpty(in_addr group_address, int interface)
+{
     for (auto element: interfaceMulticastTable->records) {
-        if (element->multicast_address == group_address) {
+        if (element->multicast_address==group_address) {
             return element->isSourceListEmpty();
         }
     }
 }
 
-Vector<in_addr>& IGMPClient::getSourceList(in_addr group_address, int interface) {
+bool IGMPClient::isInterfaceTimer(Timer* timer)
+{
+    for (auto general_timer: general_timers) {
+        if (timer==general_timer.second) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool IGMPClient::isGroupTimer(Timer* timer)
+{
+    for (auto group_timer: group_timers) {
+        if (timer==std::get<1>(group_timer)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Vector<in_addr>& IGMPClient::getSourceList(in_addr group_address, int interface)
+{
     for (auto element: interfaceMulticastTable->records) {
-        if (element->multicast_address == group_address) {
+        if (element->multicast_address==group_address) {
             return element->source_list;
         }
     }
 }
 
-Timer* IGMPClient::getPendingResponseTimer(in_addr group_address) {
-    Vector<std::tuple<int, Timer*, in_addr>>::iterator group_timers_iterator;
-    for (group_timers_iterator = group_timers.begin(); group_timers_iterator != group_timers.end(); ++group_timers_iterator)
-    {
-        if (std::get<2>(*group_timers_iterator) == group_address) {
+Timer* IGMPClient::getPendingResponseTimer(in_addr group_address)
+{
+    Vector<std::tuple<int, Timer*, in_addr >> ::iterator
+    group_timers_iterator;
+    for (group_timers_iterator = group_timers.begin();
+         group_timers_iterator!=group_timers.end();
+         ++group_timers_iterator) {
+        if (std::get<2>(*group_timers_iterator)==group_address) {
             return std::get<1>(*group_timers_iterator);
         }
     }
     return nullptr;
 }
 
-void IGMPClient::removePendingResponse(in_addr group_address) {
-    Vector<std::tuple<int, Timer*, in_addr>>::iterator group_timers_iterator;
-    for (group_timers_iterator = group_timers.begin(); group_timers_iterator != group_timers.end(); ++group_timers_iterator)
-    {
-        if (std::get<2>(*group_timers_iterator) == group_address) {
+void IGMPClient::removePendingResponse(in_addr group_address)
+{
+    Vector<std::tuple<int, Timer*, in_addr >> ::iterator
+    group_timers_iterator;
+    for (group_timers_iterator = group_timers.begin();
+         group_timers_iterator!=group_timers.end();
+         ++group_timers_iterator) {
+        if (std::get<2>(*group_timers_iterator)==group_address) {
             break;
         }
     }
     // If no pending response has been found then skip the removing part
-    if (group_timers_iterator == group_timers.end()) {
+    if (group_timers_iterator==group_timers.end()) {
         return;
     }
     group_timers.erase(group_timers_iterator);
+}
+
+GroupRecord*
+IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Vector<in_addr> source_list)
+{
+    // Create a group record, with the current state
+    GroupRecord* groupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
+
+    return groupRecord;
 }
 
 void IGMPClient::push(int port, Packet* p)

@@ -60,6 +60,8 @@ struct GroupRecord {
 
     void add_source(in_addr source);
 
+    bool isSourceAddressesEmpty();
+
     /**
      * The Auxiliary Data field, if present, contains additional information
      * pertaining to this Group Record. The protocol specified in this
@@ -93,6 +95,7 @@ struct GroupRecord {
  */
 struct Report {
 //    Report(Vector<GroupRecord*> group_records);
+    Report() {}
 
     /**
      * Type for a report is always 0x22

@@ -52,6 +52,10 @@ void GroupRecord::add_source(in_addr source)
     num_sources = htons(ntohs(num_sources)+1);
 }
 
+bool GroupRecord::isSourceAddressesEmpty() {
+    return source_addresses.size() == 0;
+}
+
 Packet* Report::createPacket()
 {
     // Room for the IP header and Ether header which must be added later by

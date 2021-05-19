@@ -83,6 +83,7 @@ CLICK_DECLS
 class Query;
 class QueryPacket;
 class ReportPacket;
+class GroupRecord;
 class GroupRecordPacket;
 
 class IGMPClient : public Element {
@@ -121,9 +122,12 @@ private:
     static void respondToQuery(Timer *, void *);
     bool isPendingResponse(in_addr);
     bool isSourceListEmpty(in_addr, int);
+    bool isInterfaceTimer(Timer*);
+    bool isGroupTimer(Timer*);
     Vector<in_addr>& getSourceList(in_addr, int);
     Timer* getPendingResponseTimer(in_addr);
     void removePendingResponse(in_addr);
+    GroupRecord* createCurrentStateRecord(in_addr, int, Vector<in_addr>);
 
     SocketMulticastTable *socketMulticastTable;
     InterfaceMulticastTable *interfaceMulticastTable;
@@ -143,6 +147,7 @@ String get_tables_handle(Element *e, void *thunk);
 struct QueryResponseArgs {
     Query* query;
     IGMPClient* client;
+    int interface;
 };
 
 CLICK_ENDDECLS
