@@ -492,9 +492,10 @@ Vector<int> IGMPRouter::get_group_members(in_addr multicast_address) {
     return members;
 }
 
-Packet *IGMPRouter::create_group_specific_query_packet(in_addr multicast_address) {
+Packet *IGMPRouter::create_group_specific_query_packet(in_addr multicast_address, bool suppress_flag) {
     Query query = Query();
     query.setGroupAddress(multicast_address);
+    query.setSFlag(suppress_flag);
 
     Packet *query_packet = query.createPacket();
 
@@ -503,6 +504,13 @@ Packet *IGMPRouter::create_group_specific_query_packet(in_addr multicast_address
     // TODO: if group_timer larger than LMQT, set suppress router side processing bit (6.6.3.1)
 
     return query_packet;
+}
+
+int IGMPRouter::get_sec_before_expiry(Timer* timer){
+    // TODO: KLopt dit? Zou kunnen dat er ergens iets misloopt, dus best eens grondig testen
+    //  ik zet ook gewoon die double om in een int, ik hoop da da geen problemen krijgt
+    int msec = (timer->expiry_steady() - Timestamp::now_steady()).msecval();
+    return msec/1000;
 }
 
 void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
@@ -516,21 +524,36 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
      * larger than LMQT, the "Suppress Router-Side Processing" bit is set in
      * the query message.
      */
-    // Set group timer to LMQT
-    // TODO
+    Vector <Pair<int, GroupState *>> group_states = get_group_state_list(multicast_address);
 
-    // Maak query pakketje
-    Packet *query_packet = create_group_specific_query_packet(multicast_address);
+    /**
+     * When transmitting a group specific query, if the group timer is
+     * larger than LMQT, the "Suppress Router-Side Processing" bit is set in
+     * the query message.
+     */
+    bool suppress_flag = false;
+    for(auto group_state_pair: group_states){
+        click_chatter("Got here");
+        GroupState* groupState = group_state_pair.second;
+        Timer* group_timer = groupState->group_timer;
+        if (group_timer != nullptr) {
+            int time_left = get_sec_before_expiry(group_timer);
+            click_chatter("Group timer firing in %d msec", time_left);
+            if (time_left > Defaults::LAST_MEMBER_QUERY_INTERVAL){
+                suppress_flag = true;
+            }
+        }
 
-    // Send query -> Done as 0th retransmission
-    // send_to_all_group_members(query_packet, multicast_address);
+        // Set group timer to LMQT
+        set_group_timer_lmqt(multicast_address, group_state_pair.first);
+    }
 
     // Schedule query retransmissions
     click_chatter("LMQC: %d ; LMQI: %d", Defaults::LAST_MEMBER_QUERY_COUNT, Defaults::LAST_MEMBER_QUERY_INTERVAL);
     for (int query_num = 0; query_num < Defaults::LAST_MEMBER_QUERY_COUNT; ++query_num) {
         ScheduledQueryTimerArgs *timerArgs = new ScheduledQueryTimerArgs();
         timerArgs->multicast_address = multicast_address;
-        timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address);
+        timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address, suppress_flag);
         timerArgs->router = this;
 
         Timer *timer = new Timer(&IGMPRouter::send_scheduled_query, timerArgs);
