@@ -55,7 +55,7 @@ public:
 
 
     // Removed parameters because they are not used
-    int configure(Vector<String>&, ErrorHandler*) { return 0; }
+    int configure(Vector<String>&, ErrorHandler*);
 
     static void send_scheduled_query(Timer*, void* thunk); // static to make it possible to use it in timers
     void send_to_all_group_members(Packet* packet, in_addr group_address);

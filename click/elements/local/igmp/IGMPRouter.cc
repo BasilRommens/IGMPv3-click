@@ -38,8 +38,12 @@ CLICK_DECLS
 
 IGMPRouter::IGMPRouter() {
     group_states = Vector < Pair < int, GroupState * >> ();
+}
 
-    // TODO: wordt da hier geinitialised of in de configure functie (die er nog niet is)?
+IGMPRouter::~IGMPRouter() { }
+
+
+int IGMPRouter::configure(Vector<String>&, ErrorHandler*) {
     // Periodically sent general queries
     GeneralQueryTimerArgs* args = new GeneralQueryTimerArgs();
     args->router = this;
@@ -47,10 +51,8 @@ IGMPRouter::IGMPRouter() {
     Timer *timer = new Timer(&IGMPRouter::send_general_queries, args);
     timer->initialize(this);
     timer->schedule_after_msec(Defaults::QUERY_INTERVAL * 1000);
+    return 0;
 }
-
-IGMPRouter::~IGMPRouter() { }
-
 
 void IGMPRouter::send_general_queries(Timer *timer, void *thunk) {
     // TODO: Election?
