@@ -46,19 +46,8 @@
  *  to have a filter mode of INCLUDE and an empty source list. (rfc3376, 5)
 */
 
-/**
- * To cover the possibility of the State-Change Report being missed by
- * one or more multicast routers, it is retransmitted [Robustness
- * Variable] - 1 more times, at intervals chosen at random from the
- * range (0, [Unsolicited Report Interval]).
-*/
 
-/**
- * If more changes to the same interface state entry occur before all
- * the retransmissions of the State-Change Report for the first change
- * have been completed, each such additional change triggers the
- * immediate transmission of a new State-Change Report.
-*/
+
 
 /**
 * Een client kan een join en een leave doen. (opgave, 3.5)
@@ -134,6 +123,7 @@ private:
     in_addr identifier; // Is used as interface in the tables
     Vector<Pair<int, Timer*>> general_timers;
     Vector<std::tuple<int, Timer*, in_addr>> group_timers;
+    Vector<Pair<int, Timer*>> change_interface_timer;
 };
 
 // Handles
@@ -143,11 +133,17 @@ int join_leave_handle(int filter_mode, const String &conf, Element *e, void *thu
 
 String get_tables_handle(Element *e, void *thunk);
 
-// Args
+// Args for responding to a query
 struct QueryResponseArgs {
     Query* query;
     IGMPClient* client;
     int interface;
+};
+// Args for marking state-change
+struct StateChangeArgs {
+    IGMPClient* client;
+    int retransmit;
+    Packet* report_packet;
 };
 
 CLICK_ENDDECLS
