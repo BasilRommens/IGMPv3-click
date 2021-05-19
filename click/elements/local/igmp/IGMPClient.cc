@@ -15,36 +15,39 @@
 
 CLICK_DECLS
 
-IGMPClient::IGMPClient()
-{
+IGMPClient::IGMPClient() {
     interfaceMulticastTable = new InterfaceMulticastTable();
     socketMulticastTable = new SocketMulticastTable();
 }
 
-IGMPClient::~IGMPClient() { }
+IGMPClient::~IGMPClient() {}
 
-int IGMPClient::configure(Vector<String>& conf, ErrorHandler* errh)
-{
+int IGMPClient::configure(Vector <String> &conf, ErrorHandler *errh) {
     // TODO: parse config string
     return 0;
 }
 
-void IGMPClient::process_udp(Packet* p)
-{
-    click_chatter("It's UDP :-)");
-    in_addr multicast_address;
-    if (interfaceMulticastTable->is_ex(multicast_address)) {
+void IGMPClient::process_udp(Packet *p) {
+//    click_chatter("It's UDP :-)");
+
+//    const click_ip *ip_header = p->ip_header();
+//    in_addr multicast_address = ip_header->ip_dst;
+//    click_chatter("Packet for %s", IPAddress(multicast_address).s().c_str());
+
+    in_addr interface; // interface is always 0.0.0.0 (
+
+    if (interfaceMulticastTable->is_ex(interface)) {
         // forward packet
+//        click_chatter("Forwarding...");
         output(2).push(p);
-    }
-    else {
+    } else {
         // drop packet
+//        click_chatter("Dropping...");
         output(1).push(p);
     }
 }
 
-void IGMPClient::process_query(QueryPacket* p, int port)
-{
+void IGMPClient::process_query(QueryPacket *p, int port) {
     // References RFC 3376, section 5.2.
     /**
      * When a system receives a Query, it does not respond immediately.
@@ -58,8 +61,8 @@ void IGMPClient::process_query(QueryPacket* p, int port)
      * The actual time allowed, called the Max
      * Resp Time, is represented in units of 1/10 second (RFC 3376, section 4.1.1.)
      */
-    Query* q = p->to_query();
-    int delay = rand()%q->getMaxResponseTime();
+    Query *q = p->to_query();
+    int delay = rand() % q->getMaxResponseTime();
 
     /**
      * Before scheduling a response to a Query, the system must first
@@ -86,7 +89,7 @@ void IGMPClient::process_query(QueryPacket* p, int port)
      * 1. If there is a pending response to a previous General Query
      * scheduled sooner than the selected delay, no additional response
      */
-    if (not isShortestGeneralPendingResponse(port, Timestamp(delay/10))) {
+    if (not isShortestGeneralPendingResponse(port, Timestamp(delay / 10))) {
         return;
     }
 
@@ -97,16 +100,16 @@ void IGMPClient::process_query(QueryPacket* p, int port)
      * Query is canceled.
      */
     if (q->isGeneralQuery()) {
-        QueryResponseArgs* args = new QueryResponseArgs();
+        QueryResponseArgs *args = new QueryResponseArgs();
         args->query = q;
         args->client = this;
         args->interface = port;
 
-        Timer* timer = new Timer(&IGMPClient::respondToQuery, args);
+        Timer *timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
-        timer->schedule_after_msec(delay*100);
+        timer->schedule_after_msec(delay * 100);
 
-        general_timers.push_back(Pair<int, Timer*>(port, timer));
+        general_timers.push_back(Pair<int, Timer *>(port, timer));
         return;
     }
 
@@ -119,12 +122,12 @@ void IGMPClient::process_query(QueryPacket* p, int port)
      * when generating a response.
      */
     if (q->isGroupSpecificQuery() and not isPendingResponse(q->groupAddress)) {
-        QueryResponseArgs* args = new QueryResponseArgs();
+        QueryResponseArgs *args = new QueryResponseArgs();
         args->query = q;
         args->client = this;
         args->interface = port;
 
-        Timer* timer = new Timer(&IGMPClient::respondToQuery, args);
+        Timer *timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
         // This should be a group timer, but there is no group and interface
         // timer so the delay is used.
@@ -144,16 +147,16 @@ void IGMPClient::process_query(QueryPacket* p, int port)
      * pending report and the selected delay.
      */
     if (isPendingResponse(q->groupAddress)
-            and (q->isGroupSpecificQuery() or isSourceListEmpty(q->groupAddress, port))) {
-        Vector<in_addr> sourceList = getSourceList(q->groupAddress, port);
+        and (q->isGroupSpecificQuery() or isSourceListEmpty(q->groupAddress, port))) {
+        Vector <in_addr> sourceList = getSourceList(q->groupAddress, port);
         sourceList.clear();
 
-        QueryResponseArgs* args = new QueryResponseArgs();
+        QueryResponseArgs *args = new QueryResponseArgs();
         args->query = q;
         args->client = this;
         args->interface = port;
 
-        Timer* timer = new Timer(&IGMPClient::respondToQuery, args);
+        Timer *timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
         // This should be the earliest of the remaining time for the pending
         // report and the selected delay
@@ -167,19 +170,17 @@ void IGMPClient::process_query(QueryPacket* p, int port)
     return;
 }
 
-void IGMPClient::process_other_packet(Packet*, int)
-{
+void IGMPClient::process_other_packet(Packet *, int) {
     return;
 }
 
-void IGMPClient::respondToQuery(Timer* timer, void* thunk)
-{
-    QueryResponseArgs* args = static_cast<QueryResponseArgs*>(thunk);
+void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
+    QueryResponseArgs *args = static_cast<QueryResponseArgs *>(thunk);
     // retrieve the original query message
-    Query* q = args->query;
-    IGMPClient* client = args->client;
+    Query *q = args->query;
+    IGMPClient *client = args->client;
     int interface = args->interface;
-    Vector<GroupRecord*>group_records_to_send{};
+    Vector < GroupRecord * > group_records_to_send{};
     // Decide what to respond
     /**
      * When the timer in a pending response record expires, the system
@@ -202,8 +203,8 @@ void IGMPClient::respondToQuery(Timer* timer, void* thunk)
         for (auto interface_record: client->interfaceMulticastTable->records) {
             // TODO fix the correct interface records
             // send current state record
-            GroupRecord* groupRecord = client->createCurrentStateRecord(q->groupAddress, interface_record->filter_mode,
-                    interface_record->source_list);
+            GroupRecord *groupRecord = client->createCurrentStateRecord(q->groupAddress, interface_record->filter_mode,
+                                                                        interface_record->source_list);
             group_records_to_send.push_back(groupRecord);
         }
     }
@@ -220,7 +221,9 @@ void IGMPClient::respondToQuery(Timer* timer, void* thunk)
     if (client->isGroupTimer(timer) and client->isSourceListEmpty(q->groupAddress, interface)) {
         for (auto interface_record: client->interfaceMulticastTable->records) {
             if (interface_record->multicast_address == q->groupAddress) {
-                GroupRecord* groupRecord = client->createCurrentStateRecord(q->groupAddress, interface_record->filter_mode, interface_record->source_list);
+                GroupRecord *groupRecord = client->createCurrentStateRecord(q->groupAddress,
+                                                                            interface_record->filter_mode,
+                                                                            interface_record->source_list);
                 group_records_to_send.push_back(groupRecord);
             }
         }
@@ -235,10 +238,10 @@ void IGMPClient::respondToQuery(Timer* timer, void* thunk)
             // Do nothing
             continue;
         }
-        Report* report = new Report();
+        Report *report = new Report();
         report->addGroupRecord(group_record);
         // Generate the packet
-        Packet* p = report->createPacket();
+        Packet *p = report->createPacket();
         // Send the packet
         client->output(interface).push(p);
     }
@@ -257,130 +260,117 @@ void IGMPClient::respondToQuery(Timer* timer, void* thunk)
     }
 }
 
-Timestamp IGMPClient::getShortestGeneralPendingResponse(int interface)
-{
+Timestamp IGMPClient::getShortestGeneralPendingResponse(int interface) {
     Timestamp current_expiry = Timestamp(2147483647U);
     for (auto general_timer : general_timers) {
-        if (general_timer.first==interface) {
+        if (general_timer.first == interface) {
             continue;
         }
-        if (general_timer.second->expiry()<current_expiry) {
+        if (general_timer.second->expiry() < current_expiry) {
             current_expiry = general_timer.second->expiry();
         }
     }
     return current_expiry;
 }
 
-bool IGMPClient::isShortestGeneralPendingResponse(int interface, Timestamp delay)
-{
-    return getShortestGeneralPendingResponse(interface)>delay;
+bool IGMPClient::isShortestGeneralPendingResponse(int interface, Timestamp delay) {
+    return getShortestGeneralPendingResponse(interface) > delay;
 }
 
-bool IGMPClient::isPendingResponse(in_addr group_address)
-{
+bool IGMPClient::isPendingResponse(in_addr group_address) {
     for (auto element: group_timers) {
-        if (std::get<2>(element)==group_address) {
+        if (std::get<2>(element) == group_address) {
             return true;
         }
     }
     return false;
 }
 
-bool IGMPClient::isSourceListEmpty(in_addr group_address, int interface)
-{
+bool IGMPClient::isSourceListEmpty(in_addr group_address, int interface) {
     for (auto element: interfaceMulticastTable->records) {
-        if (element->multicast_address==group_address) {
+        if (element->multicast_address == group_address) {
             return element->isSourceListEmpty();
         }
     }
 }
 
-bool IGMPClient::isInterfaceTimer(Timer* timer)
-{
+bool IGMPClient::isInterfaceTimer(Timer *timer) {
     for (auto general_timer: general_timers) {
-        if (timer==general_timer.second) {
+        if (timer == general_timer.second) {
             return true;
         }
     }
     return false;
 }
 
-bool IGMPClient::isGroupTimer(Timer* timer)
-{
+bool IGMPClient::isGroupTimer(Timer *timer) {
     for (auto group_timer: group_timers) {
-        if (timer==std::get<1>(group_timer)) {
+        if (timer == std::get<1>(group_timer)) {
             return true;
         }
     }
     return false;
 }
 
-Vector<in_addr>& IGMPClient::getSourceList(in_addr group_address, int interface)
-{
+Vector <in_addr> &IGMPClient::getSourceList(in_addr group_address, int interface) {
     for (auto element: interfaceMulticastTable->records) {
-        if (element->multicast_address==group_address) {
+        if (element->multicast_address == group_address) {
             return element->source_list;
         }
     }
 }
 
-Timer* IGMPClient::getPendingResponseTimer(in_addr group_address)
-{
-    Vector<std::tuple<int, Timer*, in_addr >> ::iterator
+Timer *IGMPClient::getPendingResponseTimer(in_addr group_address) {
+    Vector < std::tuple < int, Timer *, in_addr >> ::iterator
     group_timers_iterator;
     for (group_timers_iterator = group_timers.begin();
-         group_timers_iterator!=group_timers.end();
+         group_timers_iterator != group_timers.end();
          ++group_timers_iterator) {
-        if (std::get<2>(*group_timers_iterator)==group_address) {
+        if (std::get<2>(*group_timers_iterator) == group_address) {
             return std::get<1>(*group_timers_iterator);
         }
     }
     return nullptr;
 }
 
-void IGMPClient::removePendingResponse(in_addr group_address)
-{
-    Vector<std::tuple<int, Timer*, in_addr >> ::iterator
+void IGMPClient::removePendingResponse(in_addr group_address) {
+    Vector < std::tuple < int, Timer *, in_addr >> ::iterator
     group_timers_iterator;
     for (group_timers_iterator = group_timers.begin();
-         group_timers_iterator!=group_timers.end();
+         group_timers_iterator != group_timers.end();
          ++group_timers_iterator) {
-        if (std::get<2>(*group_timers_iterator)==group_address) {
+        if (std::get<2>(*group_timers_iterator) == group_address) {
             break;
         }
     }
     // If no pending response has been found then skip the removing part
-    if (group_timers_iterator==group_timers.end()) {
+    if (group_timers_iterator == group_timers.end()) {
         return;
     }
     group_timers.erase(group_timers_iterator);
 }
 
-GroupRecord*
-IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Vector<in_addr> source_list)
-{
+GroupRecord *
+IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Vector <in_addr> source_list) {
     // Create a group record, with the current state
-    GroupRecord* groupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
+    GroupRecord *groupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
 
     return groupRecord;
 }
 
-void IGMPClient::push(int port, Packet* p)
-{
+void IGMPClient::push(int port, Packet *p) {
     click_chatter("Received packet on port %d :-)", port);
 
     if (p->transport_header()) {
         if (p->udp_header()) {
             process_udp(p);
-        }
-        else {
+        } else {
             click_chatter("It's not udp here");
         }
-    }
-    else {
+    } else {
         click_chatter("It doesn't contain a transport header");
-        QueryPacket* query = (QueryPacket*) (get_data_offset_4(p));
-        if (query->type==Constants::QUERY_TYPE) {
+        QueryPacket *query = (QueryPacket *) (get_data_offset_4(p));
+        if (query->type == Constants::QUERY_TYPE) {
             process_query(query, port);
             return;
         }
@@ -390,7 +380,7 @@ void IGMPClient::push(int port, Packet* p)
          * ignored, except as required for interoperation with earlier versions
          * of IGMP.) (RFC 3376, section 5)
          */
-        if (query->type!=Constants::REPORT_TYPE) {
+        if (query->type != Constants::REPORT_TYPE) {
             process_other_packet(p, port);
             return;
         }
@@ -399,28 +389,28 @@ void IGMPClient::push(int port, Packet* p)
 }
 
 void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
-        Vector<in_addr> source_list)
-{
-    SocketRecord* socketRecord = new SocketRecord(interface, multicast_address, filter_mode, source_list);
+                                   Vector <in_addr> source_list) {
+    SocketRecord *socketRecord = new SocketRecord(interface, multicast_address, filter_mode, source_list);
 
     // Update it's own records
+    // delete previous record if exists
+    socketMulticastTable->delete_if_exists(interface, multicast_address);
     socketMulticastTable->addRecord(socketRecord);
     interfaceMulticastTable->update(socketMulticastTable);
 
     // Send report packet
     int old_state = interfaceMulticastTable->filter_state(multicast_address);
     filter_mode = new_filter_mode(old_state, filter_mode);
-    GroupRecord* record = new GroupRecord(filter_mode, multicast_address, source_list);
+    GroupRecord *record = new GroupRecord(filter_mode, multicast_address, source_list);
     Report report = Report();
     report.addGroupRecord(record);
-    Packet* report_packet = report.createPacket();
+    Packet *report_packet = report.createPacket();
     IPAddress report_address = IPAddress("224.0.0.22");
     report_packet->set_dst_ip_anno(report_address);
     output(0).push(report_packet);
 }
 
-int IGMPClient::new_filter_mode(int old_state, int new_state)
-{
+int IGMPClient::new_filter_mode(int old_state, int new_state) {
     /**
      * A change of interface state causes the system to immediately transmit
      * a State-Change Report from that interface. The type and contents of
@@ -433,29 +423,26 @@ int IGMPClient::new_filter_mode(int old_state, int new_state)
      * a per-interface record), then the "non-existent" state is considered
      * to have a filter mode of INCLUDE and an empty source list.
      */
-    if (old_state==Constants::MODE_IS_INCLUDE && new_state==Constants::MODE_IS_EXCLUDE) {
+    if (old_state == Constants::MODE_IS_INCLUDE && new_state == Constants::MODE_IS_EXCLUDE) {
         return Constants::CHANGE_TO_EXCLUDE_MODE;
-    }
-    else if (old_state==Constants::MODE_IS_EXCLUDE && new_state==Constants::MODE_IS_INCLUDE) {
+    } else if (old_state == Constants::MODE_IS_EXCLUDE && new_state == Constants::MODE_IS_INCLUDE) {
         return Constants::CHANGE_TO_INCLUDE_MODE;
-    }
-    else {
+    } else {
         return Constants::CHANGE_TO_INCLUDE_MODE;
     }
 }
 
-int join_leave_handle(int filter_mode, const String& conf, Element* e, void*, ErrorHandler* errh)
-{
+int join_leave_handle(int filter_mode, const String &conf, Element *e, void *, ErrorHandler *errh) {
 
-    IGMPClient* igmpClient = (IGMPClient*) e;
+    IGMPClient *igmpClient = (IGMPClient *) e;
 
     // Read input
-    Vector<String> vconf;
+    Vector <String> vconf;
     cp_argvec(conf, vconf);
     in_addr multicast_address;
     // In order to avoid using ADDRESS before the IP Adress we use read_mp
     // for positionally specified arguments
-    if (Args(vconf, igmpClient, errh).read_mp("ADDRESS", multicast_address).complete()<0)
+    if (Args(vconf, igmpClient, errh).read_mp("ADDRESS", multicast_address).complete() < 0)
         return -1;
 
     // Handle input
@@ -464,8 +451,7 @@ int join_leave_handle(int filter_mode, const String& conf, Element* e, void*, Er
     return 0;
 }
 
-int join_handle(const String& conf, Element* e, void* thunk, ErrorHandler* errh)
-{
+int join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
     /**
      * The Join operation is equivalent to
      * IPMulticastListen ( socket, interface, multicast-address, EXCLUDE, {} )
@@ -474,8 +460,7 @@ int join_handle(const String& conf, Element* e, void* thunk, ErrorHandler* errh)
     return join_leave_handle(Constants::MODE_IS_EXCLUDE, conf, e, thunk, errh);
 }
 
-int leave_handle(const String& conf, Element* e, void* thunk, ErrorHandler* errh)
-{
+int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
     /**
      * the Leave operation is equivalent to:
      * IPMulticastListen ( socket, interface, multicast-address, INCLUDE, {} )
@@ -484,20 +469,18 @@ int leave_handle(const String& conf, Element* e, void* thunk, ErrorHandler* errh
     return join_leave_handle(Constants::MODE_IS_INCLUDE, conf, e, thunk, errh);
 }
 
-String get_tables_handle(Element* e, void*)
-{
-    IGMPClient* igmpClient = (IGMPClient*) e;
-    SocketMulticastTable* socketMulticastTable = igmpClient->get_socket_multicast_table();\
-    InterfaceMulticastTable* interfaceMulticastTable = igmpClient->get_interface_multicast_table();
+String get_tables_handle(Element *e, void *) {
+    IGMPClient *igmpClient = (IGMPClient *) e;
+    SocketMulticastTable *socketMulticastTable = igmpClient->get_socket_multicast_table();\
+    InterfaceMulticastTable *interfaceMulticastTable = igmpClient->get_interface_multicast_table();
     String socketString = socketMulticastTable->to_string();
     String interfaceString = interfaceMulticastTable->to_string();
-    return socketString+"\n"+interfaceString;
+    return socketString + "\n" + interfaceString;
 }
 
-void IGMPClient::add_handlers()
-{
-    add_write_handler("join", &join_handle, (void*) 0);
-    add_write_handler("leave", &leave_handle, (void*) 0);
+void IGMPClient::add_handlers() {
+    add_write_handler("join", &join_handle, (void *) 0);
+    add_write_handler("leave", &leave_handle, (void *) 0);
     add_read_handler("tables", &get_tables_handle, 0);
 }
 

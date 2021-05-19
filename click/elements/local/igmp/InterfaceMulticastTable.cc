@@ -82,6 +82,7 @@ void InterfaceMulticastTable::update(SocketMulticastTable* table)
         Vector<SocketRecord*>excludes = in_ex_splitted.second;
 
         if (!excludes.empty()) {
+            click_chatter("There are excludes");
             // Contains an exclude
             int filter_mode = Constants::MODE_IS_EXCLUDE;
             Vector<in_addr> source_list = vector_union(get_source_lists(excludes));
@@ -89,6 +90,7 @@ void InterfaceMulticastTable::update(SocketMulticastTable* table)
             records.push_back(new InterfaceRecord(key.first, filter_mode, source_list));
         }
         else {
+            click_chatter("Only includes");
             // All includes
             int filter_mode = Constants::MODE_IS_INCLUDE;
             Vector<in_addr> source_list = vector_union(get_source_lists(includes));
@@ -196,14 +198,14 @@ Vector<SocketRecord*>& InterfaceMulticastTable::getMapValue(RecordMap & map, Int
 }
 
 // Komt niet echt overeen met de IS_IN, IS_EX uit de rfc, want die hebben een source_list als parameter
-bool InterfaceMulticastTable::is_in(in_addr multicast_address)
+bool InterfaceMulticastTable::is_in(in_addr interface)
 {
-    return filter_state(multicast_address)==Constants::MODE_IS_INCLUDE;
+    return filter_state(interface)==Constants::MODE_IS_INCLUDE;
 }
 
-bool InterfaceMulticastTable::is_ex(in_addr multicast_address)
+bool InterfaceMulticastTable::is_ex(in_addr interface)
 {
-    return filter_state(multicast_address)==Constants::MODE_IS_EXCLUDE;
+    return filter_state(interface)==Constants::MODE_IS_EXCLUDE;
 }
 
 bool InterfaceRecord::isSourceListEmpty() {
@@ -220,9 +222,9 @@ InterfaceRecord* InterfaceMulticastTable::getRecord(in_addr multicast_address)
     return nullptr;
 }
 
-int InterfaceMulticastTable::filter_state(in_addr multicast_address)
+int InterfaceMulticastTable::filter_state(in_addr interface)
 {
-    InterfaceRecord* record = getRecord(multicast_address);
+    InterfaceRecord* record = getRecord(interface);
     if (record!=nullptr) {
         return record->filter_mode;
     }

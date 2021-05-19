@@ -121,13 +121,13 @@ public:
     Vector<SocketRecord*>& getMapValue(RecordMap& map, InterfaceMulticastIdentifier& key);
 
     // Komt niet echt overeen met de IS_IN, IS_EX uit de rfc, want die hebben een source_list als parameter
-    bool is_in(in_addr multicast_address);
+    bool is_in(in_addr interface);
 
-    bool is_ex(in_addr multicast_address);
+    bool is_ex(in_addr interface);
 
-    InterfaceRecord* getRecord(in_addr multicast_address);
+    InterfaceRecord* getRecord(in_addr interface);
 
-    int filter_state(in_addr multicast_address);
+    int filter_state(in_addr interface);
 
     String to_string();
 
