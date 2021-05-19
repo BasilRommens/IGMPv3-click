@@ -36,10 +36,6 @@ int GroupRecord::size()
     return default_size+source_address_size+auxiliary_size;
 }
 
-//Report::Report(Vector<GroupRecord*> group_records) : group_records(group_records) {
-//    num_group_records = htons(group_records.size());
-//}
-
 void Report::addGroupRecord(GroupRecord* record)
 {
     group_records.push_back(record);
@@ -52,8 +48,9 @@ void GroupRecord::add_source(in_addr source)
     num_sources = htons(ntohs(num_sources)+1);
 }
 
-bool GroupRecord::isSourceAddressesEmpty() {
-    return source_addresses.size() == 0;
+bool GroupRecord::isSourceAddressesEmpty()
+{
+    return source_addresses.size()==0;
 }
 
 Packet* Report::createPacket()
@@ -85,7 +82,6 @@ Packet* Report::createPacket()
         GroupRecordPacket* new_group_record = (GroupRecordPacket*) (record_ptr);
 
         new_group_record->record_type = cur_group_record->getRecordType();
-        click_chatter("%d", new_group_record->record_type);
         new_group_record->aux_data_len = cur_group_record->aux_data_len;
         new_group_record->num_sources = htons(cur_group_record->getNumSources());
         new_group_record->multicast_address = cur_group_record->getMulticastAddress();

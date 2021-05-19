@@ -413,9 +413,13 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
     GroupRecord* record = new GroupRecord(filter_mode, multicast_address, source_list);
     Report report = Report();
     report.addGroupRecord(record);
+    // Create the packet
     Packet* report_packet = report.createPacket();
+    // Make a destination annotation to be used by the click script
     IPAddress report_address = IPAddress("224.0.0.22");
     report_packet->set_dst_ip_anno(report_address);
+    click_chatter("interface: %d", interface);
+    // Send the packet on port 0
     output(0).push(report_packet);
 }
 

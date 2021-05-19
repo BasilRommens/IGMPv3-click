@@ -95,7 +95,8 @@ struct GroupRecord {
  */
 struct Report {
 //    Report(Vector<GroupRecord*> group_records);
-    Report() {}
+    Report(): num_group_records(0) {
+    }
 
     /**
      * Type for a report is always 0x22
