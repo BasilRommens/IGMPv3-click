@@ -169,6 +169,8 @@ struct QueryPacket {
     in_addr sourceAddresses[0];
 
     Query* to_query();
+    uint8_t getSFlag();
+
 };
 
 #endif //TCSP_IGMPV3_QUERY_HH

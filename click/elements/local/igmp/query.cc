@@ -208,4 +208,11 @@ bool Query::isSourceListEmpty() {
     return sourceAddresses.size() == 0;
 }
 
+uint8_t QueryPacket::getSFlag()
+{
+    // Take the fifth bit from the special field in the packet
+    return (special >> 3) & 0x1;
+}
+
+
 CLICK_ENDDECLS

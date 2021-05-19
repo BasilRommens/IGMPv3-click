@@ -260,10 +260,11 @@ void IGMPRouter::process_udp(Packet *p) {
 void IGMPRouter::process_query(QueryPacket *query, int port) {
     click_chatter("\e[1;32m%-6s\e[m", "Received query");
     // rfc 6.6.1
-    // if suppress router-side processing flag set -> return // TODO: Moet het dan nog query sturen? (timer sowieso niet zetten)
+    if (query->getSFlag()) {
+        return;
+    }
 
-    // send_group_specific_query(multicast_address);
-    // set_group_timer_lmqt() // TODO: Welke poort?
+     set_group_timer_lmqt(query->groupAddress, port); // TODO: Enkel naar deze poort? -> Ik gok van wel
 
 
 }
