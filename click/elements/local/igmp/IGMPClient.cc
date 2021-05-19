@@ -251,8 +251,8 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
      * source lists associated with any reported groups are cleared.
      */
     for (auto group_record: group_records_to_send) {
-        for (auto &interface_record: client->interfaceMulticastTable->records) {
-            if (group_record->multicast_address == interface_record->multicast_address) {
+        for (auto& interface_record: client->interfaceMulticastTable->records) {
+            if (group_record->multicast_address==interface_record->multicast_address) {
                 interface_record->source_list.clear();
                 break;
             }
@@ -404,10 +404,79 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
     GroupRecord *record = new GroupRecord(filter_mode, multicast_address, source_list);
     Report report = Report();
     report.addGroupRecord(record);
+    // Create the packet
     Packet *report_packet = report.createPacket();
+    // Make a destination annotation to be used by the click script
     IPAddress report_address = IPAddress("224.0.0.22");
     report_packet->set_dst_ip_anno(report_address);
+    click_chatter("interface: %d", interface);
+    // Send the packet on port 0
     output(0).push(report_packet);
+    /**
+     * To cover the possibility of the State-Change Report being missed by
+     * one or more multicast routers, it is retransmitted [Robustness
+     * Variable] - 1 more times, at intervals chosen at random from the
+     * range (0, [Unsolicited Report Interval]).
+     */
+    /**
+     * If more changes to the same interface state entry occur before all
+     * the retransmissions of the State-Change Report for the first change
+     * have been completed, each such additional change triggers the
+     * immediate transmission of a new State-Change Report.
+     */
+
+    /**
+     * The contents of the new transmitted report are calculated as follows.
+     * As was done with the first report, the interface state for the
+     * affected group before and after the latest change is compared. The
+     * report records expressing the difference are built according to the
+     * table above. However these records are not transmitted in a message
+     * but instead merged with the contents of the pending report, to create
+     * the new State-Change report. The rules for merging the difference
+     * report resulting from the state change and the pending report are
+     * described below.
+     */
+
+    /**
+     * The transmission of the merged State-Change Report terminates
+     * retransmissions of the earlier State-Change Reports for the same
+     * multicast address, and becomes the first of [Robustness Variable]
+     * transmissions of State-Change Reports.
+     * Each time a source is included in the difference report calculated
+     */
+
+    /**
+     * Each time a source is included in the difference report calculated
+     * above, retransmission state for that source needs to be maintained
+     * until [Robustness Variable] State-Change reports have been sent by
+     * the host. This is done in order to ensure that a series of
+     * successive state changes do not break the protocol robustness.
+     * If the interface reception-state change that triggers the new report
+     */
+
+    /**
+     * If the interface reception-state change that triggers the new report
+     * is a filter-mode change, then the next [Robustness Variable] State-
+     * Change Reports will include a Filter-Mode-Change record. This
+     * applies even if any number of source-list changes occur in that
+     * period. The host has to maintain retransmission state for the group
+     * until the [Robustness Variable] State-Change reports have been sent.
+     * When [Robustness Variable] State-Change reports with Filter-Mode-
+     * Change records have been transmitted after the last filter-mode
+     * change, and if source-list changes to the interface reception have
+     * scheduled additional reports, then the next State-Change report will
+     * include Source-List-Change records.
+     */
+
+    /**
+     * Each time a State-Change Report is transmitted, the contents are
+     * determined as follows. If the report should contain a Filter-Mode-
+     * Change record, then if the current filter-mode of the interface is
+     * INCLUDE, a TO_IN record is included in the report, otherwise a TO_EX
+     * record is included. The contents of these records are built
+     * according to the table below.
+     */
+    return;
 }
 
 int IGMPClient::new_filter_mode(int old_state, int new_state) {
