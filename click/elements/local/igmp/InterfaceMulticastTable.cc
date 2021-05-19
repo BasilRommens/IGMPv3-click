@@ -206,6 +206,10 @@ bool InterfaceMulticastTable::is_ex(in_addr multicast_address)
     return filter_state(multicast_address)==Constants::MODE_IS_EXCLUDE;
 }
 
+bool InterfaceRecord::isSourceListEmpty() {
+    return source_list.size() == 0;
+}
+
 InterfaceRecord* InterfaceMulticastTable::getRecord(in_addr multicast_address)
 {
     for (auto record: records) {

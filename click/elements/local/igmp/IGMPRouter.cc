@@ -8,11 +8,11 @@
 #include <click/packet.hh>
 #include <click/timer.hh>
 
-#include "IGMPRouter.hh"
 #include "constants.hh"
 #include "report.hh"
 #include "query.hh"
 #include "helper.hh"
+#include "IGMPRouter.hh"
 
 /**
 * Conceptually, when a group record is received, the router filter-mode
@@ -49,9 +49,7 @@ IGMPRouter::IGMPRouter() {
     timer->schedule_after_msec(Defaults::QUERY_INTERVAL * 1000);
 }
 
-IGMPRouter::~IGMPRouter() {
-
-}
+IGMPRouter::~IGMPRouter() { }
 
 
 void IGMPRouter::send_general_queries(Timer *timer, void *thunk) {

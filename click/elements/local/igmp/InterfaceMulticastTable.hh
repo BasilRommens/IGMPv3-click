@@ -39,6 +39,8 @@ struct InterfaceRecord {
     bool is_exclude();
 
     String to_string();
+
+    bool isSourceListEmpty();
 };
 
 class InterfaceMulticastTable {
@@ -51,7 +53,7 @@ public:
     /**
      * Appends the SocketRecord to the list corresponding to the (interface, multicast_adress) pair in the map
      * @param multicast_pairs (interface, multicast_address) pair
-     * @param record Recrod to include at the position
+     * @param record Record to include at the position
      */
     void addToMapVector(RecordMap& multicast_pairs, SocketRecord* record);
 

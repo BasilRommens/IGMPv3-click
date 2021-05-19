@@ -26,11 +26,13 @@ struct Query {
      * the checksum, the Checksum field is set to zero. When receiving
      * packets, the checksum MUST be verified before processing a packet.
      * (RFC 3376 Section 4.1.2)
-      * 16 bits
-      */
+     *
+     * 16 bits
+     */
     uint16_t checksum;
 
-    /**  The Group Address field is set to zero when sending a General Query,
+    /**
+     * The Group Address field is set to zero when sending a General Query,
      * and set to the IP multicast address being queried when sending a
      * Group-Specific Query or Group-and-Source-Specific Query (see section
      * 4.1.9, below).
@@ -94,7 +96,6 @@ struct Query {
 
     void setSFlag(uint8_t);
 
-
     uint8_t getSFlag();
 
     void setQRV(uint8_t);
@@ -119,7 +120,33 @@ struct Query {
 
     Vector<in_addr> getAllSourceAddresses();
 
-    WritablePacket *createPacket();
+    WritablePacket* createPacket();
+
+    /**
+     * A "General Query" is sent by a multicast router to learn the
+     * complete multicast reception state of the neighboring interfaces
+     * (that is, the interfaces attached to the network on which the
+     * Query is transmitted). In a General Query, both the Group Address
+     * field and the Number of Sources (N) field are zero.
+     *
+     * (RFC 3376, section 4.1.11.)
+     * @return if this query is general query
+     */
+    bool isGeneralQuery();
+
+    /**
+     * A "Group-Specific Query" is sent by a multicast router to learn
+     * the reception state, with respect to a *single* multicast address,
+     * of the neighboring interfaces. In a Group-Specific Query, the
+     * Group Address field contains the multicast address of interest,
+     * and the Number of Sources (N) field contains zero.
+     *
+     * (RFC 3376, section 4.1.11.)
+     * @return if this query is a group specific query
+     */
+    bool isGroupSpecificQuery();
+
+    bool isSourceListEmpty();
 
     int size();
 
@@ -131,7 +158,7 @@ private:
 };
 
 struct QueryPacket {
-    uint32_t  RouterAlertOption;
+    uint32_t RouterAlertOption;
     uint8_t type = 0x11;
     uint8_t maxRespCode;
     uint16_t checksum;
@@ -140,6 +167,8 @@ struct QueryPacket {
     uint8_t QQIC;
     uint16_t numberOfSources;
     in_addr sourceAddresses[0];
+
+    Query* to_query();
 };
 
 #endif //TCSP_IGMPV3_QUERY_HH

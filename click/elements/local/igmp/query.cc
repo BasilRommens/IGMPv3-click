@@ -174,4 +174,38 @@ WritablePacket* Query::createPacket()
     return q;
 }
 
+Query* QueryPacket::to_query()
+{
+    Query* query_to_return = new Query();
+
+    // Transfer all the contents over to the query
+    query_to_return->type = this->type;
+    query_to_return->maxRespCode = this->maxRespCode;
+    query_to_return->checksum = this->checksum;
+    query_to_return->groupAddress = this->groupAddress;
+    query_to_return->special = this->special;
+    query_to_return->QQIC = this->QQIC;
+    query_to_return->numberOfSources = this->numberOfSources;
+    // make a vector of the array in the query
+    for (int idx = 0; idx<this->numberOfSources; idx++) {
+        query_to_return->sourceAddresses.push_back(this->sourceAddresses[idx]);
+    }
+
+    return query_to_return;
+}
+
+bool Query::isGeneralQuery()
+{
+    return groupAddress==0 and numberOfSources==0;
+}
+
+bool Query::isGroupSpecificQuery()
+{
+    return IPAddress(groupAddress).is_multicast() and numberOfSources==0;
+}
+
+bool Query::isSourceListEmpty() {
+    return sourceAddresses.size() == 0;
+}
+
 CLICK_ENDDECLS

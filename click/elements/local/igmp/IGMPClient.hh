@@ -69,14 +69,18 @@
 #ifndef CLICK_IGMPClient_HH
 #define CLICK_IGMPClient_HH
 
+#include <click/timestamp.hh>
 #include <click/element.hh>
 #include <click/ipaddress.hh>
+#include <algorithm>
+#include <tuple>
 
 #include "SocketMulticastTable.hh"
 #include "InterfaceMulticastTable.hh"
 
 CLICK_DECLS
 
+class Query;
 class QueryPacket;
 class ReportPacket;
 class GroupRecordPacket;
@@ -111,11 +115,21 @@ public:
     // RFC3376, 5.1
     int new_filter_mode(int old_state, int new_state);
 
-
+    bool isShortestGeneralPendingResponse(int, Timestamp);
 private:
+    Timestamp getShortestGeneralPendingResponse(int);
+    static void respondToQuery(Timer *, void *);
+    bool isPendingResponse(in_addr);
+    bool isSourceListEmpty(in_addr, int);
+    Vector<in_addr>& getSourceList(in_addr, int);
+    Timer* getPendingResponseTimer(in_addr);
+    void removePendingResponse(in_addr);
+
     SocketMulticastTable *socketMulticastTable;
     InterfaceMulticastTable *interfaceMulticastTable;
     in_addr identifier; // Is used as interface in the tables
+    Vector<Pair<int, Timer*>> general_timers;
+    Vector<std::tuple<int, Timer*, in_addr>> group_timers;
 };
 
 // Handles
@@ -125,6 +139,11 @@ int join_leave_handle(int filter_mode, const String &conf, Element *e, void *thu
 
 String get_tables_handle(Element *e, void *thunk);
 
+// Args
+struct QueryResponseArgs {
+    Query* query;
+    IGMPClient* client;
+};
 
 CLICK_ENDDECLS
 #endif
