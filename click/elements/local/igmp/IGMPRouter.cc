@@ -600,6 +600,10 @@ void IGMPRouter::process_group_record(GroupRecordPacket &groupRecord, int port) 
 }
 
 void IGMPRouter::process_report(ReportPacket *report, int port) {
+    if (not report->hasCorrectChecksum()) {
+        click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:", "Faulty checksum in Report");
+        return;
+    }
     click_chatter("\e[1;32m%-6s %d\e[m", "Received report on port", port);
 
     for (int i = 0; i < ntohs(report->num_group_records); i++) {
@@ -639,7 +643,7 @@ void IGMPRouter::push(int port, Packet *p) {
     click_chatter("It's not udp");
 
     ReportPacket *report = (ReportPacket *) (get_data_offset_4(p));
-    click_chatter("%d", ntohl(report->RouterAlertOption));
+
     if (report->type == Constants::REPORT_TYPE) {
         process_report(report, port);
         return;

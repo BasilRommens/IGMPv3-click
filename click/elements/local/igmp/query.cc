@@ -183,7 +183,7 @@ WritablePacket* Query::createPacket()
      *
      * RFC 3376, section 4.1.12.
      */
-    IPAddress query_address = isGeneralQuery()?IPAddress("224.0.0.22"):IPAddress(groupAddress);
+    IPAddress query_address = isGeneralQuery() ? IPAddress("224.0.0.22") : IPAddress(groupAddress);
     q->set_dst_ip_anno(query_address);
     return q;
 }
@@ -218,8 +218,42 @@ bool Query::isGroupSpecificQuery()
     return IPAddress(groupAddress).is_multicast() and numberOfSources==0;
 }
 
-bool Query::isSourceListEmpty() {
-    return sourceAddresses.size() == 0;
+bool Query::isSourceListEmpty()
+{
+    return sourceAddresses.size()==0;
+}
+
+bool Query::hasCorrectChecksum()
+{
+    return getChecksum() == checksum;
+}
+
+uint16_t Query::getChecksum()
+{
+    WritablePacket* q = Packet::make(0, 0, this->size()+4, 0);
+    if (!q) {
+        return 0;
+    }
+
+    // Make packet data 0 to prevent weird problems
+    memset(q->data(), '\0', q->length());
+
+    // Cast the data to a report and set the attribute values
+    QueryPacket* query = (QueryPacket*) (q->data());
+    query->type = type;
+    query->maxRespCode = maxRespCode;
+    query->groupAddress = groupAddress;
+    query->special = special;
+    query->QQIC = QQIC;
+    query->numberOfSources = numberOfSources;
+
+    for (int i = 0; i<htons(numberOfSources); i++) {
+        query->sourceAddresses[i] = sourceAddresses[i];
+    }
+
+    uint16_t new_checksum = click_in_cksum(q->data(), q->length());
+    q->kill();
+    return new_checksum;
 }
 
 uint8_t QueryPacket::getSFlag()
@@ -227,6 +261,5 @@ uint8_t QueryPacket::getSFlag()
     // Take the fifth bit from the special field in the packet
     return (special >> 3) & 0x1;
 }
-
 
 CLICK_ENDDECLS
