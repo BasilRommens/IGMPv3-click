@@ -150,11 +150,15 @@ struct Query {
 
     int size();
 
+    bool hasCorrectChecksum();
+
 private:
     /**
      * Converts a code to a value as described in RFC 3376 section 4.1.7. and 4.1.1.
      */
     int codeToValue(int code);
+
+    uint16_t getChecksum();
 };
 
 struct QueryPacket {

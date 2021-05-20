@@ -48,6 +48,11 @@ void IGMPClient::process_udp(Packet *p) {
 }
 
 void IGMPClient::process_query(QueryPacket *p, int port) {
+    Query *q = p->to_query();
+    if (not q->hasCorrectChecksum()) {
+        click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:", "Faulty checksum in Query");
+        return;
+    }
     // References RFC 3376, section 5.2.
     /**
      * When a system receives a Query, it does not respond immediately.
@@ -61,7 +66,6 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      * The actual time allowed, called the Max
      * Resp Time, is represented in units of 1/10 second (RFC 3376, section 4.1.1.)
      */
-    Query *q = p->to_query();
     int delay = rand() % q->getMaxResponseTime();
 
     /**

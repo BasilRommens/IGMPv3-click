@@ -11,7 +11,8 @@
  * the interface from which the Report is sent. (rfc3376, 4.2.4)
  */
 struct GroupRecord {
-    GroupRecord() {}
+    GroupRecord() { }
+
     GroupRecord(uint8_t record_type, in_addr multicast_address, Vector<in_addr> source_addresses);
 
     /**
@@ -78,6 +79,7 @@ struct GroupRecord {
 //    void auxilary_data; // (aux_data_len als aantal bits)
 
     int size();
+
     /**
      * If the Packet Length field in the IP header of a received Report
      * indicates that there are additional octets of data present, beyond
@@ -97,7 +99,9 @@ struct GroupRecord {
  */
 struct Report {
 //    Report(Vector<GroupRecord*> group_records);
-    Report(): num_group_records(0) {
+    Report()
+            :num_group_records(0)
+    {
     }
 
     /**
@@ -136,7 +140,7 @@ struct Report {
      * pertaining to the sender’s membership in a single multicast group on
      * the interface from which the Report is sent. (rfc3376, 4.2.4)
      */
-    Vector<GroupRecord *> group_records; // length is num_group_records
+    Vector<GroupRecord*> group_records; // length is num_group_records
 
     void addGroupRecord(GroupRecord*);
 
@@ -145,6 +149,9 @@ struct Report {
     Packet* createPacket();
 
     bool containsFilterModeChangeRecord();
+    bool hasCorrectChecksum();
+
+    uint16_t getChecksum();
 };
 
 struct GroupRecordPacket {
@@ -153,16 +160,22 @@ struct GroupRecordPacket {
     uint16_t num_sources;
     in_addr multicast_address;
     in_addr source_addresses[0];
+
+    int size();
 };
 
 struct ReportPacket {
-    uint32_t  RouterAlertOption;
+    uint32_t RouterAlertOption;
     uint8_t type = 0x22;
     uint8_t reserved1 = 0x0;
     uint16_t checksum;
     uint16_t reserved2 = 0x0;
     uint16_t num_group_records;
     GroupRecordPacket group_records[0];
+
+    int size();
+    bool hasCorrectChecksum();
+    uint16_t getChecksum();
 };
 
 
