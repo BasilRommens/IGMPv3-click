@@ -175,6 +175,7 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
 }
 
 void IGMPClient::process_other_packet(Packet *, int) {
+    click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:", "IGMP type is something else than a query");
     return;
 }
 
