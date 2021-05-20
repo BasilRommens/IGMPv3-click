@@ -573,6 +573,8 @@ void IGMPClient::push(int port, Packet *p) {
 
 void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
                                    Vector <in_addr> source_list) {
+    // Note: source_list is always empty in the modified version of the rfc
+
     SocketRecord *socketRecord = new SocketRecord(interface, multicast_address, filter_mode, source_list);
 
     // Update it's own records
@@ -689,6 +691,11 @@ int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh
     return join_leave_handle(Constants::MODE_IS_INCLUDE, conf, e, thunk, errh);
 }
 
+int crash_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
+    // "Unexpectedly" crashes the client
+    throw "Yeet";
+}
+
 String get_tables_handle(Element *e, void *) {
     IGMPClient *igmpClient = (IGMPClient *) e;
     SocketMulticastTable *socketMulticastTable = igmpClient->get_socket_multicast_table();\
@@ -701,6 +708,7 @@ String get_tables_handle(Element *e, void *) {
 void IGMPClient::add_handlers() {
     add_write_handler("join", &join_handle, (void *) 0);
     add_write_handler("leave", &leave_handle, (void *) 0);
+    add_write_handler("crash", &crash_handle, (void *) 0);
     add_read_handler("tables", &get_tables_handle, 0);
 }
 

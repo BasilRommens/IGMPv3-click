@@ -141,6 +141,8 @@ int leave_handle(const String& conf, Element* e, void* thunk, ErrorHandler* errh
 
 int join_leave_handle(int filter_mode, const String& conf, Element* e, void* thunk, ErrorHandler* errh);
 
+int crash_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
 String get_tables_handle(Element* e, void* thunk);
 
 // Args for responding to a query
