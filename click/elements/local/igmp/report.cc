@@ -53,6 +53,10 @@ bool GroupRecord::isSourceAddressesEmpty()
     return source_addresses.size()==0;
 }
 
+bool GroupRecord::isFilterModeChangeRecord() {
+    return record_type == Constants::CHANGE_TO_INCLUDE_MODE or record_type == Constants::CHANGE_TO_EXCLUDE_MODE;
+}
+
 Packet* Report::createPacket()
 {
     // Room for the IP header and Ether header which must be added later by
@@ -105,6 +109,15 @@ int Report::size()
         group_record_size += group_records[i]->size();
     }
     return default_size+group_record_size;
+}
+
+bool Report::containsFilterModeChangeRecord() {
+    for (auto group_record: group_records) {
+        if (group_record->isFilterModeChangeRecord()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 CLICK_ENDDECLS

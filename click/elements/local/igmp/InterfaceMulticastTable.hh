@@ -130,7 +130,6 @@ public:
     int filter_state(in_addr interface);
 
     String to_string();
-
 };
 
 #endif

@@ -258,6 +258,51 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
             }
         }
     }
+
+    // Remove the timer from the client
+    // general
+    bool found = false;
+    do {
+        for (Vector<Pair<int, Timer* >> ::iterator general_timer = client->general_timers.begin(); general_timer
+                !=client->general_timers.end();
+        ++general_timer) {
+            if (general_timer->second==timer) {
+                client->general_timers.erase(general_timer);
+                found = true;
+                break;
+            }
+        }
+    }
+    while (found);
+    // group
+    do {
+        for (Vector<std::tuple<int, Timer*, in_addr >> ::iterator group_timer = client->group_timers.begin();
+                group_timer
+                        !=client->group_timers.end();
+        ++group_timer) {
+            if (std::get<1>(*group_timer)==timer) {
+                client->group_timers.erase(group_timer);
+                found = true;
+                break;
+            }
+        }
+    }
+    while (found);
+}
+
+void IGMPClient::respondToStateChange(Timer* timer, void* thunk)
+{
+    StateChangeArgs* args = static_cast<StateChangeArgs*>(thunk);
+    IGMPClient* client = args->client;
+    int retransmit = args->retransmit-1;
+    args->retransmit = retransmit;
+    Report* report = report;
+    // If we can't retransmit anymore stop sending
+    if (retransmit==0) {
+        return;
+    }
+    double interval = drand48()*Defaults::UNSOLICITED_REPORT_INTERVAL;
+    timer->schedule_after_sec(interval);
 }
 
 Timestamp IGMPClient::getShortestGeneralPendingResponse(int interface) {
@@ -312,6 +357,20 @@ bool IGMPClient::isGroupTimer(Timer *timer) {
     return false;
 }
 
+bool IGMPClient::isChangeInterfaceActive(in_addr interface)
+{
+    for (auto active_interface: change_interface_active) {
+        if (active_interface.first->interface==interface) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool IGMPClient::hasChangedState(int filter_mode, int old_state) {
+    return filter_mode != old_state;
+}
+
 Vector <in_addr> &IGMPClient::getSourceList(in_addr group_address, int interface) {
     for (auto element: interfaceMulticastTable->records) {
         if (element->multicast_address == group_address) {
@@ -333,8 +392,29 @@ Timer *IGMPClient::getPendingResponseTimer(in_addr group_address) {
     return nullptr;
 }
 
-void IGMPClient::removePendingResponse(in_addr group_address) {
-    Vector < std::tuple < int, Timer *, in_addr >> ::iterator
+StateChangeArgs* IGMPClient::getChangeInterfaceActiveArgs(in_addr interface)
+{
+    return getChangeInterfaceActiveTuple(interface).first;
+}
+
+Timer* IGMPClient::getChangeInterfaceActiveTimer(in_addr interface)
+{
+    return getChangeInterfaceActiveTuple(interface).second;
+}
+
+Pair<StateChangeArgs*, Timer*> IGMPClient::getChangeInterfaceActiveTuple(in_addr interface)
+{
+    for (auto active_interface: change_interface_active) {
+        if (active_interface.first->interface==interface) {
+            return active_interface;
+        }
+    }
+    return Pair<StateChangeArgs*, Timer*>(nullptr, nullptr);
+}
+
+void IGMPClient::removePendingResponse(in_addr group_address)
+{
+    Vector<std::tuple<int, Timer*, in_addr >> ::iterator
     group_timers_iterator;
     for (group_timers_iterator = group_timers.begin();
          group_timers_iterator != group_timers.end();
@@ -350,8 +430,109 @@ void IGMPClient::removePendingResponse(in_addr group_address) {
     group_timers.erase(group_timers_iterator);
 }
 
-GroupRecord *
-IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Vector <in_addr> source_list) {
+void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_addr, int filter_mode, Vector<in_addr> source_list)
+{
+    // References RFC 3376, section 5.1.
+    /**
+     * The contents of the new transmitted report are calculated as follows.
+     * As was done with the first report, the interface state for the
+     * affected group before and after the latest change is compared. The
+     * report records expressing the difference are built according to the
+     * table above. However these records are not transmitted in a message
+     * but instead merged with the contents of the pending report, to create
+     * the new State-Change report. The rules for merging the difference
+     * report resulting from the state change and the pending report are
+     * described below.
+     */
+    int old_state = interfaceMulticastTable->filter_state(multicast_addr);
+    filter_mode = new_filter_mode(old_state, filter_mode);
+    // If no change has occurred then quit
+    if (not hasChangedState(filter_mode, old_state)) {
+        return;
+    }
+
+    GroupRecord* record = new GroupRecord(filter_mode, multicast_addr, source_list);
+    Report* state_change_report = new Report();
+    state_change_report->addGroupRecord(record);
+
+    StateChangeArgs* args = getChangeInterfaceActiveArgs(interface);
+    Timer* timer = getChangeInterfaceActiveTimer(interface);
+    Report* pending_report = args->report;
+
+    /**
+     * The transmission of the merged State-Change Report terminates
+     * retransmissions of the earlier State-Change Reports for the same
+     * multicast address, and becomes the first of [Robustness Variable]
+     * transmissions of State-Change Reports.
+     */
+    timer->unschedule();
+    for (Vector<Pair<StateChangeArgs*, Timer*>>::iterator it = change_interface_active.begin(); it != change_interface_active.end(); ++it) {
+        if (it->second == timer) {
+            change_interface_active.erase(it);
+            break;
+        }
+    }
+
+    /**
+     * Each time a source is included in the difference report calculated
+     * above, retransmission state for that source needs to be maintained
+     * until [Robustness Variable] State-Change reports have been sent by
+     * the host. This is done in order to ensure that a series of
+     * successive state changes do not break the protocol robustness.
+     */
+    if (not source_is_included) {
+        args->retransmit = Defaults::ROBUSTNESS_VARIABLE - 1;
+    }
+
+    /**
+     * If the interface reception-state change that triggers the new report
+     * is a filter-mode change, then the next [Robustness Variable] State-
+     * Change Reports will include a Filter-Mode-Change record. This
+     * applies even if any number of source-list changes occur in that
+     * period. The host has to maintain retransmission state for the group
+     * until the [Robustness Variable] State-Change reports have been sent.
+     * When [Robustness Variable] State-Change reports with Filter-Mode-
+     * Change records have been transmitted after the last filter-mode
+     * change, and if source-list changes to the interface reception have
+     * scheduled additional reports, then the next State-Change report will
+     * include Source-List-Change records.
+     */
+    if (filter_mode_change) {
+        // todo
+    }
+
+    /**
+     * Each time a State-Change Report is transmitted, the contents are
+     * determined as follows. If the report should contain a Filter-Mode-
+     * Change record, then if the current filter-mode of the interface is
+     * INCLUDE, a TO_IN record is included in the report, otherwise a TO_EX
+     * record is included. The contents of these records are built
+     * according to the table below.
+     */
+    /**
+     * Record   Sources included
+     * ------   ----------------
+     * TO_IN    All in the current interface state that must be forwarded
+     * TO_EX    All in the current interface state that must be blocked
+     */
+    Report* report = new Report();
+    if (state_change_report->containsFilterModeChangeRecord()) {
+
+        Vector<in_addr> source_list = interfaceMulticastTable->getRecord(multicast_addr)->source_list;
+        GroupRecord* newGroupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
+        if (interfaceMulticastTable->is_in(multicast_addr)) {
+            newGroupRecord->record_type = Constants::CHANGE_TO_INCLUDE_MODE;
+        } else {
+            newGroupRecord->record_type = Constants::CHANGE_TO_EXCLUDE_MODE;
+        }
+        report->addGroupRecord(newGroupRecord);
+    }
+    return;
+}
+
+GroupRecord*
+IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Vector<in_addr> source_list)
+{
     // Create a group record, with the current state
     GroupRecord *groupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
 
@@ -398,18 +579,34 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
     socketMulticastTable->addRecord(socketRecord);
     interfaceMulticastTable->update(socketMulticastTable);
 
+    /**
+     * If more changes to the same interface state entry occur before all
+     * the retransmissions of the State-Change Report for the first change
+     * have been completed, each such additional change triggers the
+     * immediate transmission of a new State-Change Report.
+     *
+     * (RFC 3376, section 5.1.)
+     */
+    // TODO further implement this part, but for now skip
+    if (isChangeInterfaceActive(interface)) {
+//        updateStateChangeReport(interface, multicast_address, filter_mode, source_list);
+//        return;
+    }
     // Send report packet
     int old_state = interfaceMulticastTable->filter_state(multicast_address);
     filter_mode = new_filter_mode(old_state, filter_mode);
-    GroupRecord *record = new GroupRecord(filter_mode, multicast_address, source_list);
-    Report report = Report();
-    report.addGroupRecord(record);
+    // If no change has occurred then quit
+    if (not hasChangedState(filter_mode, old_state)) {
+        return;
+    }
+    GroupRecord* record = new GroupRecord(filter_mode, multicast_address, source_list);
+    Report* report = new Report();
+    report->addGroupRecord(record);
     // Create the packet
-    Packet *report_packet = report.createPacket();
+    Packet* report_packet = report->createPacket();
     // Make a destination annotation to be used by the click script
     IPAddress report_address = IPAddress("224.0.0.22");
     report_packet->set_dst_ip_anno(report_address);
-    click_chatter("interface: %d", interface);
     // Send the packet on port 0
     output(0).push(report_packet);
     /**
@@ -417,65 +614,19 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
      * one or more multicast routers, it is retransmitted [Robustness
      * Variable] - 1 more times, at intervals chosen at random from the
      * range (0, [Unsolicited Report Interval]).
+     *
+     * (RFC 3376, section 5.1.)
      */
-    /**
-     * If more changes to the same interface state entry occur before all
-     * the retransmissions of the State-Change Report for the first change
-     * have been completed, each such additional change triggers the
-     * immediate transmission of a new State-Change Report.
-     */
+    double interval = drand48()*Defaults::UNSOLICITED_REPORT_INTERVAL;
+    int amount_of_retransmissions = Defaults::ROBUSTNESS_VARIABLE-1;
+    StateChangeArgs* args = new StateChangeArgs();
+    args->client = this;
+    args->retransmit = amount_of_retransmissions;
 
-    /**
-     * The contents of the new transmitted report are calculated as follows.
-     * As was done with the first report, the interface state for the
-     * affected group before and after the latest change is compared. The
-     * report records expressing the difference are built according to the
-     * table above. However these records are not transmitted in a message
-     * but instead merged with the contents of the pending report, to create
-     * the new State-Change report. The rules for merging the difference
-     * report resulting from the state change and the pending report are
-     * described below.
-     */
+    Timer* timer = new Timer(&IGMPClient::respondToStateChange, args);
+    timer->initialize(this);
+    timer->schedule_after_sec(interval);
 
-    /**
-     * The transmission of the merged State-Change Report terminates
-     * retransmissions of the earlier State-Change Reports for the same
-     * multicast address, and becomes the first of [Robustness Variable]
-     * transmissions of State-Change Reports.
-     * Each time a source is included in the difference report calculated
-     */
-
-    /**
-     * Each time a source is included in the difference report calculated
-     * above, retransmission state for that source needs to be maintained
-     * until [Robustness Variable] State-Change reports have been sent by
-     * the host. This is done in order to ensure that a series of
-     * successive state changes do not break the protocol robustness.
-     * If the interface reception-state change that triggers the new report
-     */
-
-    /**
-     * If the interface reception-state change that triggers the new report
-     * is a filter-mode change, then the next [Robustness Variable] State-
-     * Change Reports will include a Filter-Mode-Change record. This
-     * applies even if any number of source-list changes occur in that
-     * period. The host has to maintain retransmission state for the group
-     * until the [Robustness Variable] State-Change reports have been sent.
-     * When [Robustness Variable] State-Change reports with Filter-Mode-
-     * Change records have been transmitted after the last filter-mode
-     * change, and if source-list changes to the interface reception have
-     * scheduled additional reports, then the next State-Change report will
-     * include Source-List-Change records.
-     */
-
-    /**
-     * Each time a State-Change Report is transmitted, the contents are
-     * determined as follows. If the report should contain a Filter-Mode-
-     * Change record, then if the current filter-mode of the interface is
-     * INCLUDE, a TO_IN record is included in the report, otherwise a TO_EX
-     * record is included. The contents of these records are built
-     * according to the table below.
-     */
     return;
 }
 

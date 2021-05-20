@@ -46,9 +46,6 @@
  *  to have a filter mode of INCLUDE and an empty source list. (rfc3376, 5)
 */
 
-
-
-
 /**
 * Een client kan een join en een leave doen. (opgave, 3.5)
 */
@@ -63,6 +60,7 @@
 #include <click/ipaddress.hh>
 #include <algorithm>
 #include <tuple>
+#include <stdlib.h>
 
 #include "SocketMulticastTable.hh"
 #include "InterfaceMulticastTable.hh"
@@ -71,67 +69,79 @@ CLICK_DECLS
 
 class Query;
 class QueryPacket;
+class Report;
 class ReportPacket;
 class GroupRecord;
 class GroupRecordPacket;
+struct StateChangeArgs;
 
 class IGMPClient : public Element {
 public:
     IGMPClient();
     ~IGMPClient();
 
-    const char *class_name() const { return "IGMPClient"; }
-    const char *port_count() const { return "2/3"; }
-    const char *processing() const { return PUSH; }
+    const char* class_name() const { return "IGMPClient"; }
+    const char* port_count() const { return "2/3"; }
+    const char* processing() const { return PUSH; }
 
-    int configure(Vector <String> &conf, ErrorHandler *errh);
+    int configure(Vector<String>& conf, ErrorHandler* errh);
+    void push(int port, Packet* p);
 
-    void push(int port, Packet *p);
+    void process_udp(Packet* p);
+    void process_query(QueryPacket* p, int port);
+    void process_other_packet(Packet* p, int port);
 
-    void process_udp(Packet *p);
-    void process_query(QueryPacket *p, int port);
-    void process_other_packet(Packet *p, int port);
-
-    void IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
-
+    void IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
+            Vector<in_addr> source_list);
 
     // Handles
     void add_handlers();
-
-    in_addr get_identifier(){ return identifier; }
-    InterfaceMulticastTable* get_interface_multicast_table(){ return interfaceMulticastTable; }
-    SocketMulticastTable* get_socket_multicast_table(){ return socketMulticastTable; }
+    in_addr get_identifier() { return identifier; }
+    InterfaceMulticastTable* get_interface_multicast_table() { return interfaceMulticastTable; }
+    SocketMulticastTable* get_socket_multicast_table() { return socketMulticastTable; }
 
     // RFC3376, 5.1
     int new_filter_mode(int old_state, int new_state);
 
     bool isShortestGeneralPendingResponse(int, Timestamp);
 private:
-    Timestamp getShortestGeneralPendingResponse(int);
-    static void respondToQuery(Timer *, void *);
     bool isPendingResponse(in_addr);
     bool isSourceListEmpty(in_addr, int);
     bool isInterfaceTimer(Timer*);
     bool isGroupTimer(Timer*);
+    bool isChangeInterfaceActive(in_addr);
+    bool hasChangedState(int filter_mode, int old_state);
+
+    Timestamp getShortestGeneralPendingResponse(int);
     Vector<in_addr>& getSourceList(in_addr, int);
     Timer* getPendingResponseTimer(in_addr);
-    void removePendingResponse(in_addr);
-    GroupRecord* createCurrentStateRecord(in_addr, int, Vector<in_addr>);
+    StateChangeArgs* getChangeInterfaceActiveArgs(in_addr);
+    Timer* getChangeInterfaceActiveTimer(in_addr);
+    Pair<StateChangeArgs*, Timer*> getChangeInterfaceActiveTuple(in_addr);
 
-    SocketMulticastTable *socketMulticastTable;
-    InterfaceMulticastTable *interfaceMulticastTable;
+    GroupRecord* createCurrentStateRecord(in_addr, int, Vector<in_addr>);
+    void removePendingResponse(in_addr);
+    void updateStateChangeReport(in_addr, in_addr, int, Vector<in_addr>);
+
+    static void respondToQuery(Timer*, void*);
+    static void respondToStateChange(Timer*, void*);
+
+    SocketMulticastTable* socketMulticastTable;
+    InterfaceMulticastTable* interfaceMulticastTable;
     in_addr identifier; // Is used as interface in the tables
     Vector<Pair<int, Timer*>> general_timers;
     Vector<std::tuple<int, Timer*, in_addr>> group_timers;
-    Vector<Pair<int, Timer*>> change_interface_timer;
+    Vector<Pair<StateChangeArgs*, Timer*>> change_interface_active;
 };
 
 // Handles
-int join_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
-int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
-int join_leave_handle(int filter_mode, const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+int join_handle(const String& conf, Element* e, void* thunk, ErrorHandler* errh);
 
-String get_tables_handle(Element *e, void *thunk);
+int leave_handle(const String& conf, Element* e, void* thunk, ErrorHandler* errh);
+
+int join_leave_handle(int filter_mode, const String& conf, Element* e, void* thunk, ErrorHandler* errh);
+
+String get_tables_handle(Element* e, void* thunk);
 
 // Args for responding to a query
 struct QueryResponseArgs {
@@ -143,7 +153,8 @@ struct QueryResponseArgs {
 struct StateChangeArgs {
     IGMPClient* client;
     int retransmit;
-    Packet* report_packet;
+    Report* report;
+    in_addr interface;
 };
 
 CLICK_ENDDECLS

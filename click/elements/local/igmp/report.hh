@@ -3,6 +3,7 @@
 
 #include <click/packet.hh>
 #include <click/vector.hh>
+#include "constants.hh"
 
 /**
  * Each Group Record is a block of fields containing information
@@ -86,6 +87,7 @@ struct GroupRecord {
      * Report, an IGMPv3 implementation MUST NOT include additional octets
      * beyond the last Group Record. (rfc3376, 4.2.11)
      */
+    bool isFilterModeChangeRecord();
 };
 
 /**
@@ -141,6 +143,8 @@ struct Report {
     int size();
 
     Packet* createPacket();
+
+    bool containsFilterModeChangeRecord();
 };
 
 struct GroupRecordPacket {
