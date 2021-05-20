@@ -19,7 +19,7 @@ struct Query {
      * (More at RFC 3376 Section 4.1.1)
      * 8 bits
      */
-    uint8_t maxRespCode;
+    uint8_t maxRespCode = Defaults::MAX_RESPONSE_CODE;
 
     /** The Checksum is the 16-bit one’s complement of the one’s complement
      * sum of the whole IGMP message (the entire IP payload). For computing

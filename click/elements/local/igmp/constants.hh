@@ -47,6 +47,7 @@ namespace Defaults {
      * Response Interval] must be less than the [Query Interval].
      */
     extern int QUERY_RESPONSE_INTERVAL;
+    extern int MAX_RESPONSE_CODE;
 
     /**
      * 8.4. Group Membership Interval

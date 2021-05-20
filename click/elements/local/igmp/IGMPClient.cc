@@ -549,31 +549,33 @@ IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Ve
 void IGMPClient::push(int port, Packet *p) {
     click_chatter("Received packet on port %d :-)", port);
 
-    if (p->transport_header()) {
-        if (p->udp_header()) {
+        if (p->ip_header()->ip_v == p->ip_header_length()) {
+            click_chatter("\033[1;93mReceived a UDP packet\033[0m");
             process_udp(p);
-        } else {
-            click_chatter("It's not udp here");
-        }
-    } else {
-        click_chatter("It doesn't contain a transport header");
-        QueryPacket *query = (QueryPacket *) (get_data_offset_4(p));
-        if (query->type == Constants::QUERY_TYPE) {
-            process_query(query, port);
             return;
         }
+        else {
+            click_chatter("\033[1;93mReceived a query\033[0m");
+            QueryPacket *query = (QueryPacket *) (get_data_offset_4(p));
+            if (query->type == Constants::QUERY_TYPE) {
+                process_query(query, port);
+                return;
+            }
 
-        /**
-         * (Received IGMP messages of types other than Query are silently
-         * ignored, except as required for interoperation with earlier versions
-         * of IGMP.) (RFC 3376, section 5)
-         */
-        if (query->type != Constants::REPORT_TYPE) {
-            process_other_packet(p, port);
-            return;
+            /**
+             * (Received IGMP messages of types other than Query are silently
+             * ignored, except as required for interoperation with earlier versions
+             * of IGMP.) (RFC 3376, section 5)
+             *
+             * We will give a warning that they are ignored, not quite the same
+             * as the protocol. But the reasoning is here that we should be not-
+             * ified when running, in order to show that it is working
+             */
+            if (query->type != Constants::QUERY_TYPE) {
+                process_other_packet(p, port);
+                return;
+            }
         }
-    }
-    output(port).push(p);
 }
 
 void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
