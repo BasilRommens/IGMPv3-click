@@ -30,13 +30,13 @@ int IGMPClient::configure(Vector <String> &conf, ErrorHandler *errh) {
 void IGMPClient::process_udp(Packet *p) {
 //    click_chatter("It's UDP :-)");
 
-//    const click_ip *ip_header = p->ip_header();
-//    in_addr multicast_address = ip_header->ip_dst;
-//    click_chatter("Packet for %s", IPAddress(multicast_address).s().c_str());
+    const click_ip *ip_header = p->ip_header();
+    in_addr multicast_address = ip_header->ip_dst;
+    click_chatter("Packet for %s", IPAddress(multicast_address).s().c_str());
 
     in_addr interface; // interface is always 0.0.0.0 (
 
-    if (interfaceMulticastTable->is_ex(interface)) {
+    if (interfaceMulticastTable->is_ex(multicast_address)) {
         // forward packet
 //        click_chatter("Forwarding...");
         output(2).push(p);
@@ -577,6 +577,11 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
 
     SocketRecord *socketRecord = new SocketRecord(interface, multicast_address, filter_mode, source_list);
 
+    // required for report
+    int old_state = interfaceMulticastTable->filter_state(multicast_address);
+    click_chatter("Old state was %d for ip addres:", old_state);
+    click_chatter(inadress_to_string(multicast_address).c_str());
+
     // Update it's own records
     // delete previous record if exists
     socketMulticastTable->delete_if_exists(interface, multicast_address);
@@ -597,7 +602,6 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
 //        return;
     }
     // Send report packet
-    int old_state = interfaceMulticastTable->filter_state(multicast_address);
     filter_mode = new_filter_mode(old_state, filter_mode);
     // If no change has occurred then quit
     if (not hasChangedState(filter_mode, old_state)) {

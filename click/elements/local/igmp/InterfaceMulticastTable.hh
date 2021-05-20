@@ -28,11 +28,12 @@ typedef Vector<Pair<InterfaceMulticastIdentifier, Vector<SocketRecord*>>>
 RecordMap; // Maps (interface, multicast) onto list of records
 
 struct InterfaceRecord {
+    in_addr interface;
     in_addr multicast_address;
     int filter_mode;
     Vector<in_addr> source_list;
 
-    InterfaceRecord(in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
+    InterfaceRecord(in_addr interface, in_addr multicast_address, int filter_mode, Vector<in_addr> source_list);
 
     bool is_include();
 

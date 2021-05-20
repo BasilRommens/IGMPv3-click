@@ -1,6 +1,6 @@
 #include "InterfaceMulticastTable.hh"
 
-InterfaceRecord::InterfaceRecord(in_addr multicast_address, int filter_mode, Vector<in_addr> source_list)
+InterfaceRecord::InterfaceRecord(in_addr interface, in_addr multicast_address, int filter_mode, Vector<in_addr> source_list)
         :
         multicast_address(multicast_address), filter_mode(filter_mode), source_list(source_list)
 {
@@ -87,14 +87,14 @@ void InterfaceMulticastTable::update(SocketMulticastTable* table)
             int filter_mode = Constants::MODE_IS_EXCLUDE;
             Vector<in_addr> source_list = vector_union(get_source_lists(excludes));
             source_list = vector_minus(source_list, vector_union(get_source_lists(includes)));
-            records.push_back(new InterfaceRecord(key.first, filter_mode, source_list));
+            records.push_back(new InterfaceRecord(key.first, key.second , filter_mode, source_list));
         }
         else {
             click_chatter("Only includes");
             // All includes
             int filter_mode = Constants::MODE_IS_INCLUDE;
             Vector<in_addr> source_list = vector_union(get_source_lists(includes));
-            records.push_back(new InterfaceRecord(key.first, filter_mode, source_list));
+            records.push_back(new InterfaceRecord(key.first, key.second, filter_mode, source_list));
         }
     }
 }
@@ -203,9 +203,9 @@ bool InterfaceMulticastTable::is_in(in_addr interface)
     return filter_state(interface)==Constants::MODE_IS_INCLUDE;
 }
 
-bool InterfaceMulticastTable::is_ex(in_addr interface)
+bool InterfaceMulticastTable::is_ex(in_addr multicast_address)
 {
-    return filter_state(interface)==Constants::MODE_IS_EXCLUDE;
+    return filter_state(multicast_address)==Constants::MODE_IS_EXCLUDE;
 }
 
 bool InterfaceRecord::isSourceListEmpty() {
@@ -222,9 +222,9 @@ InterfaceRecord* InterfaceMulticastTable::getRecord(in_addr multicast_address)
     return nullptr;
 }
 
-int InterfaceMulticastTable::filter_state(in_addr interface)
+int InterfaceMulticastTable::filter_state(in_addr multicast_address)
 {
-    InterfaceRecord* record = getRecord(interface);
+    InterfaceRecord* record = getRecord(multicast_address);
     if (record!=nullptr) {
         return record->filter_mode;
     }
