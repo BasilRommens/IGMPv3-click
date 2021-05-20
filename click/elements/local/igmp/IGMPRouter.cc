@@ -84,13 +84,17 @@ Vector<int> IGMPRouter::get_attached_networks() {
 Packet* IGMPRouter::get_general_query() {
     Query query = Query();
 
-    // TODO: moest da 0 zijn? Kdenk het toch, dus aan niets gelijk stellen is hetzelfde als 0 pakt
-//    query.setGroupAddress(0);
+    /**
+     * The Group Address field is set to zero when sending a General Query,
+     * and set to the IP multicast address being queried when sending a
+     * Group-Specific Query or Group-and-Source-Specific Query (see section
+     * 4.1.9, below).
+     *
+     * RFC 3376 4.1.3
+     */
+    query.setGroupAddress(IPAddress(0));
 
     Packet *query_packet = query.createPacket();
-
-    IPAddress query_address = IPAddress("224.0.0.22"); // TODO: Should this be to this address?
-    query_packet->set_dst_ip_anno(query_address);
 
     return query_packet;
 }

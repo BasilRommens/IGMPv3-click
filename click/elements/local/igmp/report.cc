@@ -98,6 +98,10 @@ Packet* Report::createPacket()
 
     report->checksum = click_in_cksum(q->data(), q->length());
     report->RouterAlertOption = htonl(0x94040000);
+
+    // Make a destination annotation to be used by the click script
+    IPAddress report_address = IPAddress("224.0.0.22");
+    q->set_dst_ip_anno(report_address);
     return q;
 }
 

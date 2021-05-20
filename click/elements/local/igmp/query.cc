@@ -171,6 +171,20 @@ WritablePacket* Query::createPacket()
 
     query->checksum = click_in_cksum(q->data(), q->length());
     query->RouterAlertOption = htonl(0x94040000);
+
+    /**
+     * In IGMPv3, General Queries are sent with an IP destination address of
+     * 224.0.0.1, the all-systems multicast address. Group-Specific and
+     * Group-and-Source-Specific Queries are sent with an IP destination
+     * address equal to the multicast address of interest. *However*, a
+     * system MUST accept and process any Query whose IP Destination
+     * Address field contains *any* of the addresses (unicast or multicast)
+     * assigned to the interface on which the Query arrives.
+     *
+     * RFC 3376, section 4.1.12.
+     */
+    IPAddress query_address = isGeneralQuery()?IPAddress("224.0.0.22"):IPAddress(groupAddress);
+    q->set_dst_ip_anno(query_address);
     return q;
 }
 

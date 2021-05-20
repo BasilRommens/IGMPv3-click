@@ -480,6 +480,7 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
      * the host. This is done in order to ensure that a series of
      * successive state changes do not break the protocol robustness.
      */
+    bool source_is_included = true;
     if (not source_is_included) {
         args->retransmit = Defaults::ROBUSTNESS_VARIABLE - 1;
     }
@@ -497,6 +498,7 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
      * scheduled additional reports, then the next State-Change report will
      * include Source-List-Change records.
      */
+    bool filter_mode_change = false;
     if (filter_mode_change) {
         // todo
     }
@@ -604,9 +606,7 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
     report->addGroupRecord(record);
     // Create the packet
     Packet* report_packet = report->createPacket();
-    // Make a destination annotation to be used by the click script
-    IPAddress report_address = IPAddress("224.0.0.22");
-    report_packet->set_dst_ip_anno(report_address);
+
     // Send the packet on port 0
     output(0).push(report_packet);
     /**
