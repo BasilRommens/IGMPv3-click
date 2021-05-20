@@ -46,7 +46,7 @@ elementclass Client {
 
 	// All the packets that are under the IGMP protocol and are not broadcasts
 	igmp_classifier[1]
-		-> DropBroadcasts
+		//-> DropBroadcasts
 		-> igmp_packet::StripIPHeader // Will take the igmp packet inside the IP packet
 		-> igmp // The IGMP packet will be routed into the IGMP element of a client
 		-> IPEncap(2, $address:ip, DST_ANNO, TTL 1) // put the IP header on the igmp packet
