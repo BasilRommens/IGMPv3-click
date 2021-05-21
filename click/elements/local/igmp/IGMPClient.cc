@@ -36,7 +36,7 @@ void IGMPClient::process_udp(Packet *p) {
 
     in_addr interface; // interface is always 0.0.0.0 (
 
-    if (interfaceMulticastTable->is_ex(multicast_address)) {
+    if (interfaceMulticastTable->is_ex(multicast_address) or IPAddress(multicast_address) == IPAddress("224.0.0.1")) {
         // forward packet
 //        click_chatter("Forwarding...");
         output(2).push(p);

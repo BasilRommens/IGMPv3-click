@@ -663,6 +663,8 @@ void IGMPRouter::push(int port, Packet *p) {
         process_query(query, port);
         return;
     }
+
+    // silently ignore other packets
 }
 
 void IGMPRouter::change_group_to_exclude(int port, in_addr group_addr) {
