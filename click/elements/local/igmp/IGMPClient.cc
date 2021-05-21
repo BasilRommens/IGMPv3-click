@@ -549,7 +549,7 @@ IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Ve
 void IGMPClient::push(int port, Packet *p) {
     click_chatter("Received packet on port %d :-)", port);
 
-        if (p->ip_header()->ip_v == p->ip_header_length()) {
+        if (p->ip_header()->ip_hl == 4) {
             click_chatter("\033[1;93mReceived a UDP packet\033[0m");
             process_udp(p);
             return;
