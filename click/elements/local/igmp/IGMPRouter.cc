@@ -84,6 +84,8 @@ Vector<int> IGMPRouter::get_attached_networks() {
 Packet* IGMPRouter::get_general_query() {
     Query query = Query();
     query.setMaxRespCode(Defaults::MAX_RESPONSE_CODE);
+    query.setQRV(Defaults::ROBUSTNESS_VARIABLE);
+    query.setQQICFromValue(Defaults::QUERY_RESPONSE_INTERVAL);
 
     /**
      * The Group Address field is set to zero when sending a General Query,
@@ -502,6 +504,8 @@ Packet *IGMPRouter::create_group_specific_query_packet(in_addr multicast_address
     query.setGroupAddress(multicast_address);
     query.setSFlag(suppress_flag);
     query.setMaxRespCodeFromTime(Defaults::QUERY_RESPONSE_INTERVAL-time_until_send);
+    query.setQRV(Defaults::ROBUSTNESS_VARIABLE);
+    query.setQQICFromValue(Defaults::QUERY_RESPONSE_INTERVAL);
 
     Packet *query_packet = query.createPacket();
 

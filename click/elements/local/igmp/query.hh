@@ -104,6 +104,8 @@ struct Query {
     uint8_t getQRV();
 
     void setQQIC(uint8_t);
+    void setQQICFromValue(int value);
+
 
     uint8_t getQQI();
 

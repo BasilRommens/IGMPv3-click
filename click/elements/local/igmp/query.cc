@@ -76,6 +76,11 @@ void Query::setQQIC(uint8_t _QQIC)
     QQIC = _QQIC;
 }
 
+void Query::setQQICFromValue(int value)
+{
+    QQIC = valueToCode(value);
+}
+
 uint8_t Query::getQQI()
 {
     return codeToValue(QQIC);
