@@ -11,6 +11,11 @@ void Query::setMaxRespCode(uint8_t _maxRespCode)
     maxRespCode = _maxRespCode;
 }
 
+
+void Query::setMaxRespCodeFromTime(int time){
+    maxRespCode = valueToCode(time);
+}
+
 void Query::setGroupAddress(in_addr _groupAddress)
 {
     groupAddress = _groupAddress;
@@ -132,6 +137,17 @@ int Query::codeToValue(int code)
         // bit 4-7 mantissa
         uint8_t mant = code & 0xF;
         return (mant | 0x10) << (exp+3);
+    }
+}
+
+int Query::valueToCode(int code)
+{
+    if (code<128) {
+        return code;
+    }
+    else {
+        // TODO: Fix if greater than
+        return code;
     }
 }
 

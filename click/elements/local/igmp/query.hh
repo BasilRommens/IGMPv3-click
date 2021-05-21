@@ -85,6 +85,7 @@ struct Query {
     int getMaxResponseTime();
 
     void setMaxRespCode(uint8_t);
+    void setMaxRespCodeFromTime(int time); // time is in 1/10 seconds
 
     void setGroupAddress(in_addr);
 
@@ -157,6 +158,7 @@ private:
      * Converts a code to a value as described in RFC 3376 section 4.1.7. and 4.1.1.
      */
     int codeToValue(int code);
+    int valueToCode(int time);
 
     uint16_t getChecksum();
 };

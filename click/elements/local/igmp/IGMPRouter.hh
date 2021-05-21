@@ -60,7 +60,7 @@ public:
     static void send_scheduled_query(Timer*, void* thunk); // static to make it possible to use it in timers
     void send_to_all_group_members(Packet* packet, in_addr group_address);
 
-    Packet* create_group_specific_query_packet(in_addr multicast_address, bool suppress_flag);
+    Packet* create_group_specific_query_packet(in_addr multicast_address, bool suppress_flag, int time_until_send);
 
     static void handle_expired_group_timer(Timer* timer, void* thunk);
 

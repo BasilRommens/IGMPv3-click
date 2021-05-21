@@ -55,7 +55,7 @@ int IGMPRouter::configure(Vector<String>&, ErrorHandler*) {
 }
 
 void IGMPRouter::send_general_queries(Timer *timer, void *thunk) {
-    // TODO: Election?
+    // TODO: Election? -> Skip aangezien er hier maar 1 router per subnet is
 
     GeneralQueryTimerArgs *args = static_cast<GeneralQueryTimerArgs *>(thunk);
     IGMPRouter *router = args->router;
@@ -83,6 +83,7 @@ Vector<int> IGMPRouter::get_attached_networks() {
 
 Packet* IGMPRouter::get_general_query() {
     Query query = Query();
+    query.setMaxRespCode(Defaults::MAX_RESPONSE_CODE);
 
     /**
      * The Group Address field is set to zero when sending a General Query,
@@ -496,10 +497,11 @@ Vector<int> IGMPRouter::get_group_members(in_addr multicast_address) {
     return members;
 }
 
-Packet *IGMPRouter::create_group_specific_query_packet(in_addr multicast_address, bool suppress_flag) {
+Packet *IGMPRouter::create_group_specific_query_packet(in_addr multicast_address, bool suppress_flag, int time_until_send) {
     Query query = Query();
     query.setGroupAddress(multicast_address);
     query.setSFlag(suppress_flag);
+    query.setMaxRespCodeFromTime(Defaults::QUERY_RESPONSE_INTERVAL-time_until_send);
 
     Packet *query_packet = query.createPacket();
 
@@ -555,14 +557,17 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
     // Schedule query retransmissions
     click_chatter("LMQC: %d ; LMQI: %d", Defaults::LAST_MEMBER_QUERY_COUNT, Defaults::LAST_MEMBER_QUERY_INTERVAL);
     for (int query_num = 0; query_num < Defaults::LAST_MEMBER_QUERY_COUNT; ++query_num) {
+
+        int time_until_send = Defaults::LAST_MEMBER_QUERY_INTERVAL * query_num; // in 1/10 seconds
+
         ScheduledQueryTimerArgs *timerArgs = new ScheduledQueryTimerArgs();
         timerArgs->multicast_address = multicast_address;
-        timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address, suppress_flag);
+        timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address, suppress_flag, time_until_send);
         timerArgs->router = this;
 
         Timer *timer = new Timer(&IGMPRouter::send_scheduled_query, timerArgs);
         timer->initialize(this);
-        timer->schedule_after_msec(Defaults::LAST_MEMBER_QUERY_INTERVAL * query_num * 100);
+        timer->schedule_after_msec(time_until_send * 100);
     }
 
 }
