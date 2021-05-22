@@ -99,9 +99,7 @@ int Report::size() {
     int default_size = 8;
     int group_record_size = 0;
     for (int i = 0; i < group_records.size(); i++) {
-        click_chatter("test 0");
         group_record_size += group_records[i]->size();
-        click_chatter("test 1");
     }
     return default_size + group_record_size;
 }

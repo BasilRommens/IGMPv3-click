@@ -29,8 +29,6 @@ int IGMPClient::configure(Vector <String> &conf, ErrorHandler *errh) {
 }
 
 void IGMPClient::process_udp(Packet *p) {
-//    click_chatter("It's UDP :-)");
-
     const click_ip *ip_header = p->ip_header();
     in_addr multicast_address = ip_header->ip_dst;
     click_chatter("Packet for %s", IPAddress(multicast_address).s().c_str());
@@ -39,11 +37,9 @@ void IGMPClient::process_udp(Packet *p) {
 
     if (interfaceMulticastTable->is_ex(multicast_address) or IPAddress(multicast_address) == IPAddress("224.0.0.1")) {
         // forward packet
-//        click_chatter("Forwarding...");
         output(2).push(p);
     } else {
         // drop packet
-//        click_chatter("Dropping...");
         output(1).push(p);
     }
 }
