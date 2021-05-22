@@ -64,8 +64,6 @@ public:
 
     static void handle_expired_group_timer(Timer* timer, void* thunk);
 
-    int get_sec_before_expiry(Timer* timer);
-
     Timer* get_group_timer(in_addr group_address, int port);
 
 private:
