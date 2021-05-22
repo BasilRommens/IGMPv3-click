@@ -63,7 +63,8 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      * The actual time allowed, called the Max
      * Resp Time, is represented in units of 1/10 second (RFC 3376, section 4.1.1.)
      */
-    int delay = rand() % q->getMaxResponseTime();
+    srand48(time(0));
+    double delay = drand48() * q->getMaxResponseTime() / 10;
 
     /**
      * Before scheduling a response to a Query, the system must first
@@ -108,7 +109,7 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
 
         Timer *timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
-        timer->schedule_after_msec(delay * 100);
+        timer->schedule_after_sec(delay);
 
         general_timers.push_back(Pair<int, Timer *>(port, timer));
         return;
@@ -132,7 +133,7 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
         timer->initialize(this);
         // This should be a group timer, but there is no group and interface
         // timer so the delay is used.
-        timer->schedule_after_msec(delay);
+        timer->schedule_after_sec(delay);
 
         group_timers.push_back(std::make_tuple(port, timer, q->groupAddress));
         return;
@@ -162,7 +163,7 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
         // This should be the earliest of the remaining time for the pending
         // report and the selected delay
         timer->schedule_after_msec(
-                std::min(getPendingResponseTimer(q->groupAddress)->expiry(), Timestamp(delay)).msec());
+                std::min(get_sec_before_expiry(getPendingResponseTimer(q->groupAddress)), delay));
 
         group_timers.push_back(std::make_tuple(port, timer, q->groupAddress));
         return;

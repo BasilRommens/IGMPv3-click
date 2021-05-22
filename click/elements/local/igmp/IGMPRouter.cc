@@ -411,7 +411,7 @@ void IGMPRouter::handle_expired_group_timer(Timer *timer, void *thunk) {
     if (groupState->group_timer != timer) {
         // There has been set a new timer, this one can be ignored
         click_chatter("Not expired, group timer has still %d s left",
-                      router->get_sec_before_expiry(groupState->group_timer));
+                      get_sec_before_expiry(groupState->group_timer));
         return;
     }
 
@@ -526,13 +526,6 @@ IGMPRouter::create_group_specific_query_packet(in_addr multicast_address, bool s
     // TODO: if group_timer larger than LMQT, set suppress router side processing bit (6.6.3.1)
 
     return query_packet;
-}
-
-int IGMPRouter::get_sec_before_expiry(Timer *timer) {
-    // TODO: KLopt dit? Zou kunnen dat er ergens iets misloopt, dus best eens grondig testen
-    //  ik zet ook gewoon die double om in een int, ik hoop da da geen problemen krijgt
-    int msec = (timer->expiry_steady() - Timestamp::now_steady()).msecval();
-    return msec / 1000;
 }
 
 void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
