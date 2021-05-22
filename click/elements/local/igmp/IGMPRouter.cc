@@ -56,6 +56,7 @@ int IGMPRouter::configure(Vector <String> &, ErrorHandler *) {
 
 void IGMPRouter::send_general_queries(Timer *timer, void *thunk) {
     // TODO: Election? -> Skip aangezien er hier maar 1 router per subnet is
+    click_chatter("\e[1;34m%-6s\e[m", "Sending general queries");
 
     GeneralQueryTimerArgs *args = static_cast<GeneralQueryTimerArgs *>(thunk);
     IGMPRouter *router = args->router;
@@ -64,7 +65,6 @@ void IGMPRouter::send_general_queries(Timer *timer, void *thunk) {
     for (auto port: router->get_attached_networks()) {
         Packet *query = router->get_general_query();
         router->output(port).push(query);
-        click_chatter("General query sent on port %d", port);
     }
     // Restart the timer
     timer->reschedule_after_msec(Defaults::QUERY_INTERVAL * 1000);
@@ -75,7 +75,6 @@ Vector<int> IGMPRouter::get_attached_networks() {
     // TODO: klopt dit?
     //  smh hoe moet ik een vector met een initializer list aanmaken?
     Vector<int> attached_networks;
-    attached_networks.push_back(0);
     attached_networks.push_back(1);
     attached_networks.push_back(2);
     return attached_networks;
