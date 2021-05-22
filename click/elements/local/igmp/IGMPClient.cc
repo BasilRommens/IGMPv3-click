@@ -124,7 +124,6 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      * when generating a response.
      */
     if (q->isGroupSpecificQuery() and not isPendingResponse(q->groupAddress)) {
-        click_chatter("3");
         QueryResponseArgs *args = new QueryResponseArgs();
         args->query = q;
         args->client = this;
@@ -151,7 +150,6 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      */
     if (isPendingResponse(q->groupAddress)
         and (q->isGroupSpecificQuery() or isSourceListEmpty(q->groupAddress, port))) {
-        click_chatter("4");
         Vector <in_addr> sourceList = getSourceList(q->groupAddress, port);
         sourceList.clear();
 
