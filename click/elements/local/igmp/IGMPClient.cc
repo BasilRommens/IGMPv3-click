@@ -349,6 +349,7 @@ bool IGMPClient::isSourceListEmpty(in_addr group_address, int interface) {
             return element->isSourceListEmpty();
         }
     }
+    return true;
 }
 
 bool IGMPClient::isInterfaceTimer(Timer *timer) {
@@ -550,7 +551,6 @@ IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Ve
 }
 
 void IGMPClient::push(int port, Packet *p) {
-//    click_chatter("Received packet on port %d :-)", port);
 
     if (port == 1) {
         click_chatter("\033[1;32mReceived a UDP packet on port %d\033[0m", port);
