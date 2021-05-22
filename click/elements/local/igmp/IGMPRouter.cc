@@ -266,10 +266,26 @@ void IGMPRouter::process_udp(Packet *p) {
 void IGMPRouter::process_query(QueryPacket *query, int port) {
     click_chatter("\e[1;32m%-6s\e[m", "Received query");
     // rfc 6.6.1
+    /**
+     * When a router sends or receives a query with the Suppress Router-Side
+     * Processing flag set, it will not update its timers.
+     */
     if (query->getSFlag()) {
         return;
     }
 
+    /**
+     * When a router sends or receives a query with a clear Suppress
+     * Router-Side Processing flag, it must update its timers to reflect the
+     * correct timeout values for the group or sources being queried. The
+     * following table describes the timer actions when sending or receiving
+     * a Group-Specific or Group-and-Source Specific Query with the Suppress
+     * Router-Side Processing flag not set.
+     *
+     * Query | Action
+     * --------------
+     * Q(G)  | Group Timer is lowered to LMQT
+     */
     set_group_timer_lmqt(query->groupAddress, port); // TODO: Enkel naar deze poort? -> Ik gok van wel
 
 
@@ -488,6 +504,7 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
         click_chatter("\033[1;34mReceived request to leave\033[0m");
 //        process_ex_report_cin(groupRecord, port, router_record);
         send_group_specific_query(groupRecord.multicast_address);
+        set_group_timer_lmqt(groupRecord.multicast_address, port);
     } else {
 //        click_chatter("\e[1;93m%-6s %d %-6s %d \e[m",
 //                      "Hmmm, not found. Router is in state",
@@ -528,6 +545,7 @@ IGMPRouter::create_group_specific_query_packet(in_addr multicast_address, bool s
 }
 
 void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
+    click_chatter("Sending group specific query...");
     /**
      * When a table action "Send Q(G)" is encountered, then the group timer
      * must be lowered to LMQT. The router must then immediately send a
@@ -558,7 +576,8 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
         }
 
         // Set group timer to LMQT
-        set_group_timer_lmqt(multicast_address, group_state_pair.first);
+        // Commented because not always LMQT, sometimes GMI -> Responsibility of the caller to update this
+        // set_group_timer_lmqt(multicast_address, group_state_pair.first);
     }
 
     // Merge with previous queries -> A.k.a. remove previously scheduled queries
