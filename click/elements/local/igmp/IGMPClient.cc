@@ -92,7 +92,6 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      * scheduled sooner than the selected delay, no additional response
      */
     if (not isShortestGeneralPendingResponse(port, Timestamp(delay / 10))) {
-        click_chatter("1");
         return;
     }
 
@@ -103,7 +102,6 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      * Query is canceled.
      */
     if (q->isGeneralQuery()) {
-        click_chatter("2");
         QueryResponseArgs *args = new QueryResponseArgs();
         args->query = q;
         args->client = this;
