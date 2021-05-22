@@ -1,3 +1,5 @@
+set -e # exit when error
+
 cd click
 ./configure --disable-linuxmodule --enable-local --enable-etherswitch
 make elemlist

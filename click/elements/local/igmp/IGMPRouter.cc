@@ -520,7 +520,7 @@ int IGMPRouter::get_sec_before_expiry(Timer* timer){
     // TODO: KLopt dit? Zou kunnen dat er ergens iets misloopt, dus best eens grondig testen
     //  ik zet ook gewoon die double om in een int, ik hoop da da geen problemen krijgt
     int msec = (timer->expiry_steady() - Timestamp::now_steady()).msecval();
-    return msec/1000;
+    return msec/100;
 }
 
 void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
@@ -557,6 +557,9 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
         set_group_timer_lmqt(multicast_address, group_state_pair.first);
     }
 
+    // Merge with previous queries -> A.k.a. remove previously scheduled queries
+    stop_scheduled_retransmissions(multicast_address);
+
     // Schedule query retransmissions
     click_chatter("LMQC: %d ; LMQI: %d", Defaults::LAST_MEMBER_QUERY_COUNT, Defaults::LAST_MEMBER_QUERY_INTERVAL);
     for (int query_num = 0; query_num < Defaults::LAST_MEMBER_QUERY_COUNT; ++query_num) {
@@ -571,6 +574,7 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
         Timer *timer = new Timer(&IGMPRouter::send_scheduled_query, timerArgs);
         timer->initialize(this);
         timer->schedule_after_msec(time_until_send * 100);
+        query_timers.push_back(Pair<in_addr, Timer*>(multicast_address, timer));
     }
 
 }
@@ -582,15 +586,24 @@ void IGMPRouter::send_to_all_group_members(Packet *packet, in_addr group_address
     }
 }
 
-void IGMPRouter::send_scheduled_query(Timer *, void *thunk) {
+void IGMPRouter::send_scheduled_query(Timer * timer, void *thunk) {
+
+    click_chatter("Sending schecduled query");
+
     ScheduledQueryTimerArgs *args = static_cast<ScheduledQueryTimerArgs *>(thunk);
 
     IGMPRouter *router = args->router;
     Packet *packet = args->packet_to_send;
     in_addr address = args->multicast_address;
 
+
+    if (router->is_timer_canceled(timer)){
+        return;
+    }
+
     router->send_to_all_group_members(packet, address);
 }
+
 
 void IGMPRouter::process_group_record(GroupRecordPacket &groupRecord, int port) {
 
@@ -671,6 +684,26 @@ void IGMPRouter::change_group_to_exclude(int port, in_addr group_addr) {
     groupState.second->filter_mode = Constants::MODE_IS_EXCLUDE;
 }
 
+
+void IGMPRouter::stop_scheduled_retransmissions(in_addr multicast_address){
+    for (int i = 0; i < query_timers.size(); ++i) {
+        in_addr group_address = query_timers[i].first;
+        if (group_address == multicast_address){
+            query_timers.erase(query_timers.begin() + i);
+            --i;
+        }
+    }
+}
+
+bool IGMPRouter::is_timer_canceled(Timer* timer) {
+    for (auto query_timer: query_timers) {
+        if (query_timer.second == timer){
+            return false;
+        }
+    }
+    click_chatter("Warning: Timer not triggered because merged with other query");
+    return true;
+}
 
 CLICK_ENDDECLS
 EXPORT_ELEMENT(IGMPRouter)

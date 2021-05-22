@@ -96,6 +96,12 @@ private:
     void set_group_timer_gmi(in_addr multicast_address, int port);
     void set_group_timer_lmqt(in_addr multicast_address, int port);
 
+    // Removes scheduled queries, used for "merging" queries
+    // Note: Merging is interpreted as stopping the previous retransmissions and only sending new ones
+    void stop_scheduled_retransmissions(in_addr multicast_address);
+    bool is_timer_canceled(Timer* timer);
+    Vector<Pair<in_addr, Timer*>> query_timers;
+
 };
 
 
