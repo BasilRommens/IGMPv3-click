@@ -252,7 +252,8 @@ void IGMPRouter::update_filter_mode(in_addr multicast_address, int filter_mode, 
 //    click_chatter("\e[1;34m%-6s\e[m", "Updated filter mode");
 }
 
-void IGMPRouter::process_udp(Packet *p) {
+void IGMPRouter::process_udp(Packet *p, int port) {
+    click_chatter("\e[1;32m%-6s %d\e[m", "Received UDP packet on port", port);
     const click_ip *ip_header = p->ip_header();
     Vector <Pair<int, GroupState *>> port_groups = get_group_state_list(ip_header->ip_dst);
     for (auto port_group: port_groups) {
@@ -264,7 +265,7 @@ void IGMPRouter::process_udp(Packet *p) {
 }
 
 void IGMPRouter::process_query(QueryPacket *query, int port) {
-    click_chatter("\e[1;32m%-6s\e[m", "Received query");
+    click_chatter("\e[1;32m%-6s %d\e[m", "Received query on port %d", port);
     // rfc 6.6.1
     if (query->getSFlag()) {
         return;
@@ -661,7 +662,7 @@ void IGMPRouter::push(int port, Packet *p) {
 //    click_chatter("\e[1;32m%-6s %d\e[m", "Received packet on port", port);
 
     if (port == 3) {
-        process_udp(p);
+        process_udp(p, port);
         return;
     }
 

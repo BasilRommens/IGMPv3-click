@@ -67,7 +67,7 @@ public:
     Timer* get_group_timer(in_addr group_address, int port);
 
 private:
-    void process_udp(Packet* p);
+    void process_udp(Packet* p, int port);
     void process_query(QueryPacket* query, int port);
     void process_report(ReportPacket* report, int port);
 
