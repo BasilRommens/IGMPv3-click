@@ -151,8 +151,17 @@ int Query::valueToCode(int code)
         return code;
     }
     else {
-        // TODO: Fix if greater than
-        return code;
+        uint8_t exp = log2(value);
+        uint8_t mant = value/ pow(2, exp);
+
+        mant = mant & 0x0f; // only keep last 4 bits of mant
+
+        exp = exp & 0x07; // exp is 3 bits
+        exp = exp << 4;
+
+        uint8_t result = 0x80 | exp | mant; // first bit 1, then exp, then mant
+
+        return result;
     }
 }
 
