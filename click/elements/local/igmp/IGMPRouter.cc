@@ -56,7 +56,7 @@ int IGMPRouter::configure(Vector <String> &, ErrorHandler *) {
 
 void IGMPRouter::send_general_queries(Timer *timer, void *thunk) {
     // TODO: Election? -> Skip aangezien er hier maar 1 router per subnet is
-    click_chatter("\e[1;34m%-6s\e[m", "Sending general queries");
+    click_chatter("\e[1;35m%-6s\e[m", "Sending general queries");
 
     GeneralQueryTimerArgs *args = static_cast<GeneralQueryTimerArgs *>(thunk);
     IGMPRouter *router = args->router;
@@ -586,12 +586,12 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
 void IGMPRouter::send_to_all_group_members(Packet *packet, in_addr group_address) {
     for (int port: get_group_members(group_address)) {
         output(port).push(packet);
-        click_chatter("Query sent on port %d", port);
+//        click_chatter("\033[1;35mQuery sent on port %d\033[0m", port);
     }
 }
 
 void IGMPRouter::send_scheduled_query(Timer *timer, void *thunk) {
-    click_chatter("\033[1;34mSending scheduled query\033[0m");
+    click_chatter("\033[1;35mSending scheduled query\033[0m");
 
     ScheduledQueryTimerArgs *args = static_cast<ScheduledQueryTimerArgs *>(thunk);
 
@@ -658,7 +658,7 @@ void IGMPRouter::push(int port, Packet *p) {
     // Poort 1: Eerste client
     // Poort 2: Tweede client
 
-    click_chatter("\e[1;32m%-6s %d\e[m", "Received packet on port", port);
+//    click_chatter("\e[1;32m%-6s %d\e[m", "Received packet on port", port);
 
     if (port == 3) {
         process_udp(p);
