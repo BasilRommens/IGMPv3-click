@@ -410,6 +410,7 @@ void IGMPRouter::handle_expired_group_timer(Timer *timer, void *thunk) {
     // Check if this expired timer is the most recent timer
     if (groupState->group_timer != timer) {
         // There has been set a new timer, this one can be ignored
+        click_chatter("Not expired, group timer has still %d s left", router->get_sec_before_expiry(groupState->group_timer));
         return;
     }
 
@@ -435,6 +436,7 @@ void IGMPRouter::set_group_timer(in_addr multicast_address, int port, int durati
     timer->schedule_after_msec(duration * 1000);
 
     groupState->group_timer = timer;
+    click_chatter("Set a new group timer, still %d seconds left", get_sec_before_expiry(timer));
 }
 
 void IGMPRouter::set_group_timer_lmqt(in_addr multicast_address, int port) {
@@ -520,7 +522,7 @@ int IGMPRouter::get_sec_before_expiry(Timer* timer){
     // TODO: KLopt dit? Zou kunnen dat er ergens iets misloopt, dus best eens grondig testen
     //  ik zet ook gewoon die double om in een int, ik hoop da da geen problemen krijgt
     int msec = (timer->expiry_steady() - Timestamp::now_steady()).msecval();
-    return msec/100;
+    return msec/1000;
 }
 
 void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
