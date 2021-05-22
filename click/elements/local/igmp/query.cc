@@ -145,10 +145,10 @@ int Query::codeToValue(int code)
     }
 }
 
-int Query::valueToCode(int code)
+int Query::valueToCode(int value)
 {
-    if (code<128) {
-        return code;
+    if (value<128) {
+        return value;
     }
     else {
         uint8_t exp = log2(value);
