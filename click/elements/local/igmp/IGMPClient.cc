@@ -31,7 +31,7 @@ int IGMPClient::configure(Vector <String> &conf, ErrorHandler *errh) {
 void IGMPClient::process_udp(Packet *p) {
     const click_ip *ip_header = p->ip_header();
     in_addr multicast_address = ip_header->ip_dst;
-    click_chatter("Packet for %s", IPAddress(multicast_address).s().c_str());
+//    click_chatter("Packet for %s", IPAddress(multicast_address).s().c_str());
 
     in_addr interface; // interface is always 0.0.0.0 (
 
@@ -549,7 +549,7 @@ IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Ve
 }
 
 void IGMPClient::push(int port, Packet *p) {
-    click_chatter("Received packet on port %d :-)", port);
+//    click_chatter("Received packet on port %d :-)", port);
 
     if (port == 1) {
         click_chatter("\033[1;93mReceived a UDP packet\033[0m");
@@ -587,8 +587,8 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
 
     // required for report
     int old_state = interfaceMulticastTable->filter_state(multicast_address);
-    click_chatter("Old state was %d for ip addres:", old_state);
-    click_chatter(inadress_to_string(multicast_address).c_str());
+//    click_chatter("Old state was %d for ip addres:", old_state);
+//    click_chatter(inadress_to_string(multicast_address).c_str());
 
     // Update it's own records
     // delete previous record if exists

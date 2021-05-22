@@ -38,13 +38,11 @@ elementclass Client {
 
 	// All the UDP packets
 	igmp_classifier[0]
-		-> Print("UDP")
 		-> [1]igmp[1]
 		-> ip;
 
 	// All the other packets
 	igmp_classifier[2]
-		-> Print("other")
 		-> ip;
 
 	igmp[2]
@@ -68,5 +66,5 @@ elementclass Client {
 		-> output;
 
 	in_cl[1] -> [1]arpq;
-	in_cl[2] -> igmp_classifier; // in order to filter out the IGMP packets
+	in_cl[2] -> ToDump("client.pcap") -> igmp_classifier; // in order to filter out the IGMP packets
 }
