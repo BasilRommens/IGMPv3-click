@@ -449,7 +449,7 @@ void IGMPRouter::set_group_timer_lmqt(in_addr multicast_address, int port) {
     // Updates the timer of the group with given multicast_addrefss on given port to the last member query time
     int lmqt = Defaults::LAST_MEMBER_QUERY_TIME;
     set_group_timer(multicast_address, port, lmqt);
-    click_chatter("\033[1;34mSet group timer to LMQT (still %d seconds left)\033[0m",
+    click_chatter("\033[1;34mSet group timer to LMQT (still %f seconds left)\033[0m",
                   get_sec_before_expiry(get_group_timer(multicast_address, port)));
 }
 
@@ -457,7 +457,7 @@ void IGMPRouter::set_group_timer_gmi(in_addr multicast_address, int port) {
     // Updates the timer of the group with given multicast_addrefss on given port to the Group Membership Interval
     int gmi = Defaults::GROUP_MEMBERSHIP_INTERVAL;
     set_group_timer(multicast_address, port, gmi);
-    click_chatter("\033[1;34mSet group timer to GMI (still %d seconds left)\033[0m",
+    click_chatter("\033[1;34mSet group timer to GMI (still %f seconds left)\033[0m",
                   get_sec_before_expiry(get_group_timer(multicast_address, port)));
 }
 
