@@ -130,12 +130,12 @@ int IGMPRouter::get_current_state(in_addr multicast_address, int port) {
 }
 
 void IGMPRouter::to_in(in_addr multicast_address, int port) {
-    click_chatter("\e[1;34m%-6s\e[m", "Changing to in");
+//    click_chatter("\e[1;34m%-6s\e[m", "Changing to in");
     update_filter_mode(multicast_address, Constants::MODE_IS_INCLUDE, port);
 }
 
 void IGMPRouter::to_ex(in_addr multicast_address, int port) {
-    click_chatter("\e[1;34m%-6s\e[m", "Changing to ex");
+//    click_chatter("\e[1;34m%-6s\e[m", "Changing to ex");
     update_filter_mode(multicast_address, Constants::MODE_IS_EXCLUDE, port);
 }
 
@@ -249,7 +249,7 @@ bool IGMPRouter::should_forward_udp(GroupState *group_state, Packet *p) {
 void IGMPRouter::update_filter_mode(in_addr multicast_address, int filter_mode, int port) {
     Pair < int, GroupState * > groupState = get_or_create_group_state(multicast_address, port);
     groupState.second->filter_mode = filter_mode;
-    click_chatter("\e[1;34m%-6s\e[m", "Updated filter mode");
+//    click_chatter("\e[1;34m%-6s\e[m", "Updated filter mode");
 }
 
 void IGMPRouter::process_udp(Packet *p) {
@@ -257,8 +257,8 @@ void IGMPRouter::process_udp(Packet *p) {
     Vector <Pair<int, GroupState *>> port_groups = get_group_state_list(ip_header->ip_dst);
     for (auto port_group: port_groups) {
         if (should_forward_udp(port_group.second, p)) {
-            click_chatter("\e[1;35m%-6s %d\e[m", "Forwarded UDP packet on port", port_group.first);
             output(port_group.first).push(p);
+            click_chatter("\e[1;35m%-6s %d\e[m", "Forwarded UDP packet on port", port_group.first);
         }
     }
 }
@@ -489,11 +489,11 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
 //        process_ex_report_cin(groupRecord, port, router_record);
         send_group_specific_query(groupRecord.multicast_address);
     } else {
-        click_chatter("\e[1;93m%-6s %d %-6s %d \e[m",
-                      "Hmmm, not found. Router is in state",
-                      router_state,
-                      "and report contains state ",
-                      report_recd_mode);
+//        click_chatter("\e[1;93m%-6s %d %-6s %d \e[m",
+//                      "Hmmm, not found. Router is in state",
+//                      router_state,
+//                      "and report contains state ",
+//                      report_recd_mode);
     }
 }
 
@@ -631,12 +631,12 @@ void IGMPRouter::process_report(ReportPacket *report, int port) {
     click_chatter("\e[1;32m%-6s %d\e[m", "Received report on port", port);
 
     for (int i = 0; i < ntohs(report->num_group_records); i++) {
-        click_chatter("\e[1;34m%-6s %d\e[m", "Processing group record", i);
+//        click_chatter("\e[1;34m%-6s %d\e[m", "Processing group record", i);
         GroupRecordPacket groupRecord = report->group_records[i];
         process_group_record(groupRecord, port);
     }
 
-    click_chatter("\e[1;34m%-6s\e[m", "Done processing report");
+//    click_chatter("\e[1;34m%-6s\e[m", "Done processing report");
 }
 
 void IGMPRouter::push(int port, Packet *p) {

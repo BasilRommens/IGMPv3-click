@@ -553,11 +553,11 @@ void IGMPClient::push(int port, Packet *p) {
 //    click_chatter("Received packet on port %d :-)", port);
 
     if (port == 1) {
-        click_chatter("\033[1;93mReceived a UDP packet\033[0m");
+        click_chatter("\033[1;32mReceived a UDP packet on port %d\033[0m", port);
         process_udp(p);
         return;
     } else {
-        click_chatter("\033[1;93mReceived a query\033[0m");
+        click_chatter("\033[1;32mReceived a query on port %d\033[0m", port);
         QueryPacket *query = (QueryPacket *) (get_data_offset_4(p));
         if (query->type == Constants::QUERY_TYPE) {
             process_query(query, port);
