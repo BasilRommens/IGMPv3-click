@@ -6,6 +6,7 @@
 #include <click/error.hh>
 #include <click/packet_anno.hh>
 #include <click/timer.hh>
+#include <time.h>
 
 #include "constants.hh"
 #include "report.hh"
@@ -175,7 +176,8 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
 }
 
 void IGMPClient::process_other_packet(Packet *, int) {
-    click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:", "IGMP type is something else than a query -> Silently ignoring");
+    click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:",
+                  "IGMP type is something else than a query -> Silently ignoring");
     return;
 }
 
@@ -256,8 +258,8 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
      * source lists associated with any reported groups are cleared.
      */
     for (auto group_record: group_records_to_send) {
-        for (auto& interface_record: client->interfaceMulticastTable->records) {
-            if (group_record->multicast_address==interface_record->multicast_address) {
+        for (auto &interface_record: client->interfaceMulticastTable->records) {
+            if (group_record->multicast_address == interface_record->multicast_address) {
                 interface_record->source_list.clear();
                 break;
             }
@@ -269,43 +271,52 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
     bool found;
     do {
         found = false;
-        for (Vector<Pair<int, Timer* >> ::iterator general_timer = client->general_timers.begin();
-                general_timer !=client->general_timers.end(); ++general_timer) {
-            if (general_timer->second==timer) {
+        for (Vector < Pair < int, Timer * >> ::iterator general_timer = client->general_timers.begin();
+                general_timer != client->general_timers.end();
+        ++general_timer) {
+            if (general_timer->second == timer) {
                 client->general_timers.erase(general_timer);
                 found = true;
                 break;
             }
         }
-    }
-    while (found);
+    } while (found);
     // group
     do {
         found = false;
-        for (Vector<std::tuple<int, Timer*, in_addr >> ::iterator it = client->group_timers.begin();
-                it !=client->group_timers.end(); ++it) {
-            if (std::get<1>(*it)==timer) {
+        for (Vector < std::tuple < int, Timer *, in_addr >> ::iterator it = client->group_timers.begin();
+                it != client->group_timers.end();
+        ++it) {
+            if (std::get<1>(*it) == timer) {
                 client->group_timers.erase(it);
                 found = true;
                 break;
             }
         }
-    }
-    while (found);
+    } while (found);
 }
 
-void IGMPClient::respondToStateChange(Timer* timer, void* thunk)
-{
-    StateChangeArgs* args = static_cast<StateChangeArgs*>(thunk);
-    IGMPClient* client = args->client;
-    int retransmit = args->retransmit-1;
+void IGMPClient::respondToStateChange(Timer *timer, void *thunk) {
+    StateChangeArgs *args = static_cast<StateChangeArgs *>(thunk);
+    IGMPClient *client = args->client;
+    int retransmit = args->retransmit - 1;
     args->retransmit = retransmit;
-    Report* report = report;
+    Report *report = args->report;
+
+    // Create the packet
+
+    Packet *report_packet = report->createPacket();
+    // Send report packet
+    client->output(0).push(report_packet);
+
     // If we can't retransmit anymore stop sending
-    if (retransmit==0) {
+    if (retransmit == 0) {
         return;
     }
-    double interval = drand48()*Defaults::UNSOLICITED_REPORT_INTERVAL;
+
+    // Set a seed
+    srand48(time(0));
+    double interval = drand48() * Defaults::UNSOLICITED_REPORT_INTERVAL;
     timer->schedule_after_sec(interval);
 }
 
@@ -361,10 +372,9 @@ bool IGMPClient::isGroupTimer(Timer *timer) {
     return false;
 }
 
-bool IGMPClient::isChangeInterfaceActive(in_addr interface)
-{
+bool IGMPClient::isChangeInterfaceActive(in_addr interface) {
     for (auto active_interface: change_interface_active) {
-        if (active_interface.first->interface==interface) {
+        if (active_interface.first->interface == interface) {
             return true;
         }
     }
@@ -396,29 +406,25 @@ Timer *IGMPClient::getPendingResponseTimer(in_addr group_address) {
     return nullptr;
 }
 
-StateChangeArgs* IGMPClient::getChangeInterfaceActiveArgs(in_addr interface)
-{
+StateChangeArgs *IGMPClient::getChangeInterfaceActiveArgs(in_addr interface) {
     return getChangeInterfaceActiveTuple(interface).first;
 }
 
-Timer* IGMPClient::getChangeInterfaceActiveTimer(in_addr interface)
-{
+Timer *IGMPClient::getChangeInterfaceActiveTimer(in_addr interface) {
     return getChangeInterfaceActiveTuple(interface).second;
 }
 
-Pair<StateChangeArgs*, Timer*> IGMPClient::getChangeInterfaceActiveTuple(in_addr interface)
-{
+Pair<StateChangeArgs *, Timer *> IGMPClient::getChangeInterfaceActiveTuple(in_addr interface) {
     for (auto active_interface: change_interface_active) {
-        if (active_interface.first->interface==interface) {
+        if (active_interface.first->interface == interface) {
             return active_interface;
         }
     }
-    return Pair<StateChangeArgs*, Timer*>(nullptr, nullptr);
+    return Pair<StateChangeArgs *, Timer *>(nullptr, nullptr);
 }
 
-void IGMPClient::removePendingResponse(in_addr group_address)
-{
-    Vector<std::tuple<int, Timer*, in_addr >> ::iterator
+void IGMPClient::removePendingResponse(in_addr group_address) {
+    Vector < std::tuple < int, Timer *, in_addr >> ::iterator
     group_timers_iterator;
     for (group_timers_iterator = group_timers.begin();
          group_timers_iterator != group_timers.end();
@@ -434,8 +440,8 @@ void IGMPClient::removePendingResponse(in_addr group_address)
     group_timers.erase(group_timers_iterator);
 }
 
-void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_addr, int filter_mode, Vector<in_addr> source_list)
-{
+void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_addr, int filter_mode,
+                                         Vector <in_addr> source_list) {
     // References RFC 3376, section 5.1.
     /**
      * The contents of the new transmitted report are calculated as follows.
@@ -455,13 +461,13 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
         return;
     }
 
-    GroupRecord* record = new GroupRecord(filter_mode, multicast_addr, source_list);
-    Report* state_change_report = new Report();
+    GroupRecord *record = new GroupRecord(filter_mode, multicast_addr, source_list);
+    Report *state_change_report = new Report();
     state_change_report->addGroupRecord(record);
 
-    StateChangeArgs* args = getChangeInterfaceActiveArgs(interface);
-    Timer* timer = getChangeInterfaceActiveTimer(interface);
-    Report* pending_report = args->report;
+    StateChangeArgs *args = getChangeInterfaceActiveArgs(interface);
+    Timer *timer = getChangeInterfaceActiveTimer(interface);
+    Report *pending_report = args->report;
 
     /**
      * The transmission of the merged State-Change Report terminates
@@ -470,7 +476,9 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
      * transmissions of State-Change Reports.
      */
     timer->unschedule();
-    for (Vector<Pair<StateChangeArgs*, Timer*>>::iterator it = change_interface_active.begin(); it != change_interface_active.end(); ++it) {
+    for (Vector < Pair < StateChangeArgs * , Timer * >> ::iterator it = change_interface_active.begin(); it !=
+                                                                                                         change_interface_active.end();
+    ++it) {
         if (it->second == timer) {
             change_interface_active.erase(it);
             break;
@@ -521,11 +529,11 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
      * TO_IN    All in the current interface state that must be forwarded
      * TO_EX    All in the current interface state that must be blocked
      */
-    Report* report = new Report();
+    Report *report = new Report();
     if (state_change_report->containsFilterModeChangeRecord()) {
 
-        Vector<in_addr> source_list = interfaceMulticastTable->getRecord(multicast_addr)->source_list;
-        GroupRecord* newGroupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
+        Vector <in_addr> source_list = interfaceMulticastTable->getRecord(multicast_addr)->source_list;
+        GroupRecord *newGroupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
         if (interfaceMulticastTable->is_in(multicast_addr)) {
             newGroupRecord->record_type = Constants::CHANGE_TO_INCLUDE_MODE;
         } else {
@@ -536,9 +544,8 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
     return;
 }
 
-GroupRecord*
-IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Vector<in_addr> source_list)
-{
+GroupRecord *
+IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Vector <in_addr> source_list) {
     // Create a group record, with the current state
     GroupRecord *groupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
 
@@ -548,34 +555,32 @@ IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Ve
 void IGMPClient::push(int port, Packet *p) {
     click_chatter("Received packet on port %d :-)", port);
 
-        if (port == 1) {
-            click_chatter("\033[1;93mReceived a UDP packet\033[0m");
-            process_udp(p);
+    if (port == 1) {
+        click_chatter("\033[1;93mReceived a UDP packet\033[0m");
+        process_udp(p);
+        return;
+    } else {
+        click_chatter("\033[1;93mReceived a query\033[0m");
+        QueryPacket *query = (QueryPacket *) (get_data_offset_4(p));
+        if (query->type == Constants::QUERY_TYPE) {
+            process_query(query, port);
             return;
         }
-        else {
-            click_chatter("\033[1;93mReceived a query\033[0m");
-            QueryPacket *query = (QueryPacket *) (get_data_offset_4(p));
-            if (query->type == Constants::QUERY_TYPE) {
-                process_query(query, port);
-                return;
-            }
 
-            /**
-             * (Received IGMP messages of types other than Query are silently
-             * ignored, except as required for interoperation with earlier versions
-             * of IGMP.) (RFC 3376, section 5)
-             *
-             * We will give a warning that they are ignored, not quite the same
-             * as the protocol. But the reasoning is here that we should be not-
-             * ified when running, in order to show that it is working
-             */
-            if (query->type != Constants::QUERY_TYPE) {
-                click_chatter("type %d", query->type);
-                process_other_packet(p, port);
-                return;
-            }
+        /**
+         * (Received IGMP messages of types other than Query are silently
+         * ignored, except as required for interoperation with earlier versions
+         * of IGMP.) (RFC 3376, section 5)
+         *
+         * We will give a warning that they are ignored, not quite the same
+         * as the protocol. But the reasoning is here that we should be not-
+         * ified when running, in order to show that it is working
+         */
+        if (query->type != Constants::QUERY_TYPE) {
+            process_other_packet(p, port);
+            return;
         }
+    }
 }
 
 void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multicast_address, int filter_mode,
@@ -614,11 +619,11 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
     if (not hasChangedState(filter_mode, old_state)) {
         return;
     }
-    GroupRecord* record = new GroupRecord(filter_mode, multicast_address, source_list);
-    Report* report = new Report();
+    GroupRecord *record = new GroupRecord(filter_mode, multicast_address, source_list);
+    Report *report = new Report();
     report->addGroupRecord(record);
     // Create the packet
-    Packet* report_packet = report->createPacket();
+    Packet *report_packet = report->createPacket();
 
     // Send the packet on port 0
     output(0).push(report_packet);
@@ -630,13 +635,16 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
      *
      * (RFC 3376, section 5.1.)
      */
-    double interval = drand48()*Defaults::UNSOLICITED_REPORT_INTERVAL;
-    int amount_of_retransmissions = Defaults::ROBUSTNESS_VARIABLE-1;
-    StateChangeArgs* args = new StateChangeArgs();
+    // Seeding the random number generator based on the random time
+    srand48(time(0));
+    double interval = drand48() * Defaults::UNSOLICITED_REPORT_INTERVAL;
+    int amount_of_retransmissions = Defaults::ROBUSTNESS_VARIABLE - 1;
+    StateChangeArgs *args = new StateChangeArgs();
     args->client = this;
     args->retransmit = amount_of_retransmissions;
+    args->report = report;
 
-    Timer* timer = new Timer(&IGMPClient::respondToStateChange, args);
+    Timer *timer = new Timer(&IGMPClient::respondToStateChange, args);
     timer->initialize(this);
     timer->schedule_after_sec(interval);
 
@@ -702,7 +710,7 @@ int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh
     return join_leave_handle(Constants::MODE_IS_INCLUDE, conf, e, thunk, errh);
 }
 
-int crash_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
+int crash_handle(const String &conf, Element *e, void *, ErrorHandler *) {
     // "Unexpectedly" crashes the client
     throw "Yeet";
 }

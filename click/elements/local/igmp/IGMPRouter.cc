@@ -561,7 +561,6 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
     stop_scheduled_retransmissions(multicast_address);
 
     // Schedule query retransmissions
-    click_chatter("LMQC: %d ; LMQI: %d", Defaults::LAST_MEMBER_QUERY_COUNT, Defaults::LAST_MEMBER_QUERY_INTERVAL);
     for (int query_num = 0; query_num < Defaults::LAST_MEMBER_QUERY_COUNT; ++query_num) {
 
         int time_until_send = Defaults::LAST_MEMBER_QUERY_INTERVAL * query_num; // in 1/10 seconds
@@ -661,7 +660,6 @@ void IGMPRouter::push(int port, Packet *p) {
         process_udp(p);
         return;
     }
-    click_chatter("It's not udp");
 
     ReportPacket *report = (ReportPacket *) (get_data_offset_4(p));
 

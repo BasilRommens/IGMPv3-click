@@ -42,9 +42,7 @@ void Query::setSFlag(uint8_t _SFlag)
 {
     // take the first bit of the s flag and set it to the 5th bit of the special field
     // in the packet
-    click_chatter("%d", special & 0xf7);
     special = special & 0xf7 | _SFlag << 3;
-    click_chatter("%d", special);
 }
 
 uint8_t Query::getSFlag()
