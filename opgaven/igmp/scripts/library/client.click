@@ -32,13 +32,19 @@ elementclass Client {
 	igmp :: IGMPClient;
 	// This will classify all the igmp stuff on different output ports
 	igmp_classifier::IPClassifier(
-		ip proto igmp and dst host 224.0.0.1,
+		ip proto udp,
 		ip proto igmp,
 		-);
 
-	// All the packets that are not using the IGMP protocol
-	igmp_classifier[2]
+	// All the UDP packets
+	igmp_classifier[0]
+		-> Print("UDP")
 		-> [1]igmp[1]
+		-> ip;
+
+	// All the other packets
+	igmp_classifier[2]
+		-> Print("other")
 		-> ip;
 
 	igmp[2]
@@ -53,10 +59,6 @@ elementclass Client {
 		-> AddIPRouterAlertOption
 		-> SetIPChecksum
 		-> arpq;
-
-	// The special broadcast should not be dropped, so it skips the drop broadcasts
-	igmp_classifier[0]
-		-> igmp_packet;
 
 	// Incoming Packets
 	input

@@ -266,11 +266,11 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
 
     // Remove the timer from the client
     // general
-    bool found = false;
+    bool found;
     do {
-        for (Vector<Pair<int, Timer* >> ::iterator general_timer = client->general_timers.begin(); general_timer
-                !=client->general_timers.end();
-        ++general_timer) {
+        found = false;
+        for (Vector<Pair<int, Timer* >> ::iterator general_timer = client->general_timers.begin();
+                general_timer !=client->general_timers.end(); ++general_timer) {
             if (general_timer->second==timer) {
                 client->general_timers.erase(general_timer);
                 found = true;
@@ -281,12 +281,11 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
     while (found);
     // group
     do {
-        for (Vector<std::tuple<int, Timer*, in_addr >> ::iterator group_timer = client->group_timers.begin();
-                group_timer
-                        !=client->group_timers.end();
-        ++group_timer) {
-            if (std::get<1>(*group_timer)==timer) {
-                client->group_timers.erase(group_timer);
+        found = false;
+        for (Vector<std::tuple<int, Timer*, in_addr >> ::iterator it = client->group_timers.begin();
+                it !=client->group_timers.end(); ++it) {
+            if (std::get<1>(*it)==timer) {
+                client->group_timers.erase(it);
                 found = true;
                 break;
             }
@@ -549,7 +548,7 @@ IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Ve
 void IGMPClient::push(int port, Packet *p) {
     click_chatter("Received packet on port %d :-)", port);
 
-        if (p->ip_header()->ip_hl == 4) {
+        if (port == 1) {
             click_chatter("\033[1;93mReceived a UDP packet\033[0m");
             process_udp(p);
             return;
@@ -572,6 +571,7 @@ void IGMPClient::push(int port, Packet *p) {
              * ified when running, in order to show that it is working
              */
             if (query->type != Constants::QUERY_TYPE) {
+                click_chatter("type %d", query->type);
                 process_other_packet(p, port);
                 return;
             }

@@ -543,7 +543,6 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
      */
     bool suppress_flag = false;
     for(auto group_state_pair: group_states){
-        click_chatter("Got here");
         GroupState* groupState = group_state_pair.second;
         Timer* group_timer = groupState->group_timer;
         if (group_timer != nullptr) {
