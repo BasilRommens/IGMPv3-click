@@ -66,6 +66,8 @@ public:
 
     int get_sec_before_expiry(Timer* timer);
 
+    Timer* get_group_timer(in_addr group_address, int port);
+
 private:
     void process_udp(Packet* p);
     void process_query(QueryPacket* query, int port);

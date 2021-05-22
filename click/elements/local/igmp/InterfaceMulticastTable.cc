@@ -82,7 +82,7 @@ void InterfaceMulticastTable::update(SocketMulticastTable* table)
         Vector<SocketRecord*>excludes = in_ex_splitted.second;
 
         if (!excludes.empty()) {
-            click_chatter("There are excludes");
+//            click_chatter("There are excludes");
             // Contains an exclude
             int filter_mode = Constants::MODE_IS_EXCLUDE;
             Vector<in_addr> source_list = vector_union(get_source_lists(excludes));
@@ -90,7 +90,7 @@ void InterfaceMulticastTable::update(SocketMulticastTable* table)
             records.push_back(new InterfaceRecord(key.first, key.second , filter_mode, source_list));
         }
         else {
-            click_chatter("Only includes");
+//            click_chatter("Only includes");
             // All includes
             int filter_mode = Constants::MODE_IS_INCLUDE;
             Vector<in_addr> source_list = vector_union(get_source_lists(includes));
