@@ -494,6 +494,7 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
         process_ex_report_in(groupRecord, port, router_record);
     } else if (router_state == Constants::MODE_IS_EXCLUDE && report_recd_mode == Constants::MODE_IS_EXCLUDE) {
         process_in_report_ex(groupRecord, port, router_record);
+        set_group_timer_gmi(groupRecord.multicast_address, port);
     } // RFC 3376 section 6.4
     else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
         process_in_report_cex(groupRecord, port, router_record);
@@ -656,7 +657,7 @@ void IGMPRouter::process_report(ReportPacket *report, int port) {
     click_chatter("\e[1;32m%-6s %d\e[m", "Received report on port", port);
 
     for (int i = 0; i < ntohs(report->num_group_records); i++) {
-//        click_chatter("\e[1;34m%-6s %d\e[m", "Processing group record", i);
+        // click_chatter("\e[1;34m%-6s %d\e[m", "Processing group record", i);
         GroupRecordPacket groupRecord = report->group_records[i];
         process_group_record(groupRecord, port);
     }
