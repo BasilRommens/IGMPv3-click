@@ -497,7 +497,6 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
     } // RFC 3376 section 6.4
     else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
         process_in_report_cex(groupRecord, port, router_record);
-        send_group_specific_query(groupRecord.multicast_address, port);
         set_group_timer_gmi(groupRecord.multicast_address, port);
     } else if (router_state == Constants::MODE_IS_EXCLUDE &&
                report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
