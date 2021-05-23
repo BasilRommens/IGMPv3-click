@@ -139,7 +139,6 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
         args->client = this;
         args->interface = port;
 
-        click_chatter("yeet");
         Timer *timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
         // This should be a group timer, but there is no group and interface
@@ -223,10 +222,11 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
             GroupRecord *groupRecord = client->createCurrentStateRecord(interface_record->multicast_address,
                                                                         interface_record->filter_mode,
                                                                         interface_record->source_list);
-            Report *report = new Report();
-            report->addGroupRecord(groupRecord);
-            Packet *p = report->createPacket();
-            client->output(interface).push(p);
+//            Report *report = new Report();
+//            report->addGroupRecord(groupRecord);
+//            Packet *p = report->createPacket();
+//            client->output(interface).push(p);
+            group_records_to_send.push_back(groupRecord);
         }
     }
 
@@ -245,6 +245,10 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
                 GroupRecord *groupRecord = client->createCurrentStateRecord(q->groupAddress,
                                                                             interface_record->filter_mode,
                                                                             interface_record->source_list);
+//                Report *report = new Report();
+//                report->addGroupRecord(groupRecord);
+//                Packet *p = report->createPacket();
+//                client->output(interface).push(p);
                 group_records_to_send.push_back(groupRecord);
             }
         }
@@ -255,7 +259,7 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
      *  addresses, then no response is sent.
      */
     for (auto group_record: group_records_to_send) {
-        if (group_record->isSourceAddressesEmpty()) {
+        if (group_record->isSourceAddressesEmpty() and group_record->record_type == Constants::MODE_IS_INCLUDE) {
             // Do nothing
             continue;
         }
