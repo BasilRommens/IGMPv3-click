@@ -146,6 +146,7 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
         timer->schedule_after_msec(delay * 1000);
 
         group_timers.push_back(std::make_tuple(port, timer, q->groupAddress));
+        click_chatter("here we crash 1");
         return;
     }
 
@@ -160,8 +161,11 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      */
     if (isPendingResponse(q->groupAddress)
         and (q->isGroupSpecificQuery() or isSourceListEmpty(q->groupAddress, port))) {
-        Vector <in_addr> sourceList = getSourceList(q->groupAddress, port);
-        sourceList.clear();
+        Vector <in_addr>* sourceList = getSourceList(q->groupAddress, port);
+        if (not sourceList) {
+            sourceList = new Vector<in_addr>{};
+        }
+        sourceList->clear();
 
         QueryResponseArgs *args = new QueryResponseArgs();
         args->query = q;
@@ -178,7 +182,6 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
         group_timers.push_back(std::make_tuple(port, timer, q->groupAddress));
         return;
     }
-
     return;
 }
 
@@ -315,7 +318,6 @@ void IGMPClient::respondToStateChange(Timer *timer, void *thunk) {
     Report *report = args->report;
 
     // Create the packet
-
     Packet *report_packet = report->createPacket();
     // Send report packet
     client->output(0).push(report_packet);
@@ -415,12 +417,13 @@ bool IGMPClient::hasChangedState(int filter_mode, int old_state) {
     return filter_mode != old_state;
 }
 
-Vector <in_addr> &IGMPClient::getSourceList(in_addr group_address, int) {
+Vector <in_addr> *IGMPClient::getSourceList(in_addr group_address, int) {
     for (auto element: interfaceMulticastTable->records) {
         if (element->multicast_address == group_address) {
-            return element->source_list;
+            return &element->source_list;
         }
     }
+    return nullptr;
 }
 
 Timer *IGMPClient::getPendingResponseTimer(in_addr group_address) {

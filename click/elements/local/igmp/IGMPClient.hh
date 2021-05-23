@@ -113,7 +113,7 @@ private:
     bool hasChangedState(int filter_mode, int old_state);
 
     Timestamp getShortestGeneralPendingResponse(int);
-    Vector<in_addr>& getSourceList(in_addr, int);
+    Vector<in_addr>* getSourceList(in_addr, int);
     Timer* getPendingResponseTimer(in_addr);
     StateChangeArgs* getChangeInterfaceActiveArgs(in_addr);
     Timer* getChangeInterfaceActiveTimer(in_addr);
