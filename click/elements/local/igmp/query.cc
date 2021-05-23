@@ -42,7 +42,7 @@ void Query::setSFlag(uint8_t _SFlag)
 {
     // take the first bit of the s flag and set it to the 5th bit of the special field
     // in the packet
-    special = special & 0xf7 | _SFlag << 3;
+    special = (special & 0xf7) | _SFlag << 3;
 }
 
 uint8_t Query::getSFlag()
@@ -59,7 +59,7 @@ void Query::setQRV(uint8_t _QRV)
         special &= 0xf8;
     }
     else {
-        special = special & 0xf8 | _QRV;
+        special = (special & 0xf8) | _QRV;
     }
 }
 

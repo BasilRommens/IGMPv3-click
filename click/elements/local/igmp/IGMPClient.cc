@@ -23,8 +23,7 @@ IGMPClient::IGMPClient() {
 
 IGMPClient::~IGMPClient() {}
 
-int IGMPClient::configure(Vector <String> &conf, ErrorHandler *errh) {
-    // TODO: parse config string
+int IGMPClient::configure(Vector <String> &, ErrorHandler *) {
     return 0;
 }
 
@@ -376,7 +375,7 @@ bool IGMPClient::isPendingResponse(in_addr group_address) {
     return false;
 }
 
-bool IGMPClient::isSourceListEmpty(in_addr group_address, int interface) {
+bool IGMPClient::isSourceListEmpty(in_addr group_address, int) {
     for (auto element: interfaceMulticastTable->records) {
         if (element->multicast_address == group_address) {
             return element->isSourceListEmpty();
@@ -416,7 +415,7 @@ bool IGMPClient::hasChangedState(int filter_mode, int old_state) {
     return filter_mode != old_state;
 }
 
-Vector <in_addr> &IGMPClient::getSourceList(in_addr group_address, int interface) {
+Vector <in_addr> &IGMPClient::getSourceList(in_addr group_address, int) {
     for (auto element: interfaceMulticastTable->records) {
         if (element->multicast_address == group_address) {
             return element->source_list;
@@ -677,7 +676,6 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
     timer->initialize(this);
     timer->schedule_after_msec(interval * 1000);
 
-    click_chatter("interface %d", socket);
     group_timers.push_back(std::make_tuple(socket, timer, multicast_address));
     return;
 }
@@ -741,7 +739,7 @@ int leave_handle(const String &conf, Element *e, void *thunk, ErrorHandler *errh
     return join_leave_handle(Constants::MODE_IS_INCLUDE, conf, e, thunk, errh);
 }
 
-int crash_handle(const String &conf, Element *e, void *, ErrorHandler *) {
+int crash_handle(const String &, Element *, void *, ErrorHandler *) {
     // "Unexpectedly" crashes the client
     throw "Yeet";
 }

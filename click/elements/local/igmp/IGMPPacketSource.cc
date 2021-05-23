@@ -19,10 +19,8 @@ IGMPPacketSource::IGMPPacketSource() { }
 
 IGMPPacketSource::~IGMPPacketSource() { }
 
-int IGMPPacketSource::configure(Vector<String>& conf, ErrorHandler* errh)
+int IGMPPacketSource::configure(Vector<String>&, ErrorHandler*)
 {
-    // TODO: parse config string
-
     // Call function run_timer every second
     Timer* timer = new Timer(this);
     timer->initialize(this);
@@ -99,10 +97,10 @@ Packet* IGMPPacketSource::make_report_packet()
     return report.createPacket();
 }
 
-void IGMPPacketSource::run_timer(Timer* timer)
+void IGMPPacketSource::run_timer(Timer*)
 {
     if (Packet*q = make_packet()) {
-        Report* r = (Report*) q->data();
+//        Report* r = (Report*) q->data();
         output(0).push(q);
 //        timer->reschedule_after_msec(1000);
     }

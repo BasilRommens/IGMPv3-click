@@ -604,10 +604,6 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address, int port) 
 
 }
 
-void IGMPRouter::send(Packet *packet, int port){
-    output(port).push(packet);
-}
-
 void IGMPRouter::send_to_all_group_members(Packet *packet, in_addr group_address) {
     for (int port: get_group_members(group_address)) {
         output(port).push(packet);
