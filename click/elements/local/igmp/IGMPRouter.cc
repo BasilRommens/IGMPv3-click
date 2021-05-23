@@ -258,7 +258,7 @@ void IGMPRouter::process_udp(Packet *p, int port) {
     Vector <Pair<int, GroupState *>> port_groups = get_group_state_list(ip_header->ip_dst);
     for (auto port_group: port_groups) {
         if (should_forward_udp(port_group.second, p)) {
-            output(port_group.first).push(p);
+            output(port_group.first).push(p->clone());
             click_chatter("\e[1;35m%-6s %d\e[m", "Forwarded UDP packet on port", port_group.first);
         }
     }
