@@ -33,9 +33,10 @@ void IGMPClient::process_udp(Packet *p) {
     in_addr multicast_address = ip_header->ip_dst;
 //    click_chatter("Packet for %s", IPAddress(multicast_address).s().c_str());
 
-    in_addr interface; // interface is always 0.0.0.0 (
+    in_addr interface; // interface is always 0.0.0.0
 
-    if (interfaceMulticastTable->is_ex(multicast_address) or IPAddress(multicast_address) == IPAddress("224.0.0.1")) {
+    if (interfaceMulticastTable->can_forward(ip_header->ip_src, multicast_address) or
+        IPAddress(multicast_address) == IPAddress("224.0.0.1")) {
         // forward packet
         output(2).push(p);
     } else {
@@ -91,7 +92,7 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      * 1. If there is a pending response to a previous General Query
      * scheduled sooner than the selected delay, no additional response
      */
-    if (not isShortestGeneralPendingResponse(port, Timestamp(delay / 10))) {
+    if (isShortestGeneralPendingResponse(port, Timestamp(delay))) {
         return;
     }
 
@@ -109,7 +110,17 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
 
         Timer *timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
-        timer->schedule_after_sec(delay);
+        timer->schedule_after_msec(delay * 1000);
+
+        // Cancel any pending responses to General Queries, there won't be more than one
+        // We will delete the general timer on the same interface
+        for (Vector < Pair < int, Timer * >> ::iterator it = general_timers.begin(); it != general_timers.end();
+        ++it) {
+            if (it->first == port) {
+                general_timers.erase(it);
+                break;
+            }
+        }
 
         general_timers.push_back(Pair<int, Timer *>(port, timer));
         return;
@@ -133,7 +144,7 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
         timer->initialize(this);
         // This should be a group timer, but there is no group and interface
         // timer so the delay is used.
-        timer->schedule_after_sec(delay);
+        timer->schedule_after_msec(delay * 1000);
 
         group_timers.push_back(std::make_tuple(port, timer, q->groupAddress));
         return;
@@ -200,16 +211,20 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
      * has reception state, as described in section 3.2. The Current-
      * State Record carries the multicast address and its associated
      * filter mode (MODE_IS_INCLUDE or MODE_IS_EXCLUDE) and source list.
-     * TODO Multiple Current-State Records are packed into individual Report
+     * Multiple Current-State Records are packed into individual Report
      * messages, to the extent possible.
      */
     if (client->isInterfaceTimer(timer)) {
         for (auto interface_record: client->interfaceMulticastTable->records) {
             // TODO fix the correct interface records
             // send current state record
-            GroupRecord *groupRecord = client->createCurrentStateRecord(q->groupAddress, interface_record->filter_mode,
+            GroupRecord *groupRecord = client->createCurrentStateRecord(interface_record->multicast_address,
+                                                                        interface_record->filter_mode,
                                                                         interface_record->source_list);
-            group_records_to_send.push_back(groupRecord);
+            Report *report = new Report();
+            report->addGroupRecord(groupRecord);
+            Packet *p = report->createPacket();
+            client->output(interface).push(p);
         }
     }
 
@@ -308,13 +323,31 @@ void IGMPClient::respondToStateChange(Timer *timer, void *thunk) {
 
     // If we can't retransmit anymore stop sending
     if (retransmit == 0) {
+        // Remove the timer from the list
+        for (Vector < std::tuple < int, Timer *, in_addr >> ::iterator it = client->group_timers.begin(); it !=
+                                                                                                          client->group_timers.end();
+        ++it) {
+            if (std::get<0>(*it) == 0 and std::get<1>(*it) == timer) {
+                client->group_timers.erase(it);
+                break;
+            }
+        }
+        for (Vector < Pair < int, Timer * >> ::iterator it = client->general_timers.begin(); it !=
+                                                                                             client->general_timers.end();
+        ++it) {
+            if (it->first == 0 and it->second == timer) {
+                client->general_timers.erase(it);
+                break;
+            }
+        }
+        timer->unschedule();
         return;
     }
 
     // Set a seed
     srand48(time(0));
     double interval = drand48() * Defaults::UNSOLICITED_REPORT_INTERVAL;
-    timer->schedule_after_sec(interval);
+    timer->schedule_after_msec(interval * 1000);
 }
 
 Timestamp IGMPClient::getShortestGeneralPendingResponse(int interface) {
@@ -331,7 +364,7 @@ Timestamp IGMPClient::getShortestGeneralPendingResponse(int interface) {
 }
 
 bool IGMPClient::isShortestGeneralPendingResponse(int interface, Timestamp delay) {
-    return getShortestGeneralPendingResponse(interface) > delay;
+    return getShortestGeneralPendingResponse(interface) < delay;
 }
 
 bool IGMPClient::isPendingResponse(in_addr group_address) {
@@ -551,7 +584,6 @@ IGMPClient::createCurrentStateRecord(in_addr multicast_addr, int filter_mode, Ve
 }
 
 void IGMPClient::push(int port, Packet *p) {
-
     if (port == 1) {
         click_chatter("\033[1;32mReceived a UDP packet on port %d\033[0m", port);
         process_udp(p);
@@ -643,8 +675,10 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
 
     Timer *timer = new Timer(&IGMPClient::respondToStateChange, args);
     timer->initialize(this);
-    timer->schedule_after_sec(interval);
+    timer->schedule_after_msec(interval * 1000);
 
+    click_chatter("interface %d", socket);
+    group_timers.push_back(std::make_tuple(socket, timer, multicast_address));
     return;
 }
 

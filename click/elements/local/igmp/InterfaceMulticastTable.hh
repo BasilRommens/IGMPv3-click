@@ -131,6 +131,10 @@ public:
     int filter_state(in_addr interface);
 
     String to_string();
+
+    bool can_forward(in_addr, in_addr);
+
+    bool is_in_source_list(in_addr, in_addr);
 };
 
 #endif
