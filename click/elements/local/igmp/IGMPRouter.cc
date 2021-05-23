@@ -497,14 +497,14 @@ void IGMPRouter::update_router_state(GroupRecordPacket &groupRecord, int port) {
     } // RFC 3376 section 6.4
     else if (router_state == Constants::MODE_IS_INCLUDE && report_recd_mode == Constants::CHANGE_TO_EXCLUDE_MODE) {
         process_in_report_cex(groupRecord, port, router_record);
-        send_group_specific_query(groupRecord.multicast_address);
+        send_group_specific_query(groupRecord.multicast_address, port);
         set_group_timer_gmi(groupRecord.multicast_address, port);
     } else if (router_state == Constants::MODE_IS_EXCLUDE &&
                report_recd_mode == Constants::CHANGE_TO_INCLUDE_MODE) {
         // TODO: Merge queries if already pending queries
         click_chatter("\033[1;34mReceived request to leave\033[0m");
 //        process_ex_report_cin(groupRecord, port, router_record);
-        send_group_specific_query(groupRecord.multicast_address);
+        send_group_specific_query(groupRecord.multicast_address, port);
         set_group_timer_lmqt(groupRecord.multicast_address, port);
     } else {
 //        click_chatter("\e[1;93m%-6s %d %-6s %d \e[m",
@@ -545,7 +545,7 @@ IGMPRouter::create_group_specific_query_packet(in_addr multicast_address, bool s
     return query_packet;
 }
 
-void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
+void IGMPRouter::send_group_specific_query(in_addr multicast_address, int port) {
     click_chatter("Sending group specific query...");
     /**
      * When a table action "Send Q(G)" is encountered, then the group timer
@@ -557,7 +557,7 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
      * larger than LMQT, the "Suppress Router-Side Processing" bit is set in
      * the query message.
      */
-    Vector <Pair<int, GroupState *>> group_states = get_group_state_list(multicast_address);
+    Pair<int, GroupState *> group_state_pair = get_group_state(multicast_address, port);
 
     /**
      * When transmitting a group specific query, if the group timer is
@@ -565,24 +565,23 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
      * the query message.
      */
     bool suppress_flag = false;
-    for (auto group_state_pair: group_states) {
-        GroupState *groupState = group_state_pair.second;
-        Timer *group_timer = groupState->group_timer;
-        if (group_timer != nullptr) {
-            int time_left = get_sec_before_expiry(group_timer);
-//            click_chatter("Group timer firing in %d msec", time_left);
-            if ((time_left / 10) > Defaults::LAST_MEMBER_QUERY_INTERVAL) {
-                suppress_flag = true;
-            }
+    GroupState *groupState = group_state_pair.second;
+    Timer *group_timer = groupState->group_timer;
+    if (group_timer != nullptr) {
+        int time_left = get_sec_before_expiry(group_timer);
+        // click_chatter("Group timer firing in %d msec", time_left);
+        if ((time_left / 10) > Defaults::LAST_MEMBER_QUERY_INTERVAL) {
+            suppress_flag = true;
         }
-
-        // Set group timer to LMQT
-        // Commented because not always LMQT, sometimes GMI -> Responsibility of the caller to update this
-        // set_group_timer_lmqt(multicast_address, group_state_pair.first);
     }
 
+    // Set group timer to LMQT
+    // Commented because not always LMQT, sometimes GMI -> Responsibility of the caller to update this
+    // set_group_timer_lmqt(multicast_address, group_state_pair.first);
+
+
     // Merge with previous queries -> A.k.a. remove previously scheduled queries
-    stop_scheduled_retransmissions(multicast_address);
+    stop_scheduled_retransmissions(multicast_address, port);
 
     // Schedule query retransmissions
     for (int query_num = 0; query_num < Defaults::LAST_MEMBER_QUERY_COUNT; ++query_num) {
@@ -591,6 +590,7 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
 
         ScheduledQueryTimerArgs *timerArgs = new ScheduledQueryTimerArgs();
         timerArgs->multicast_address = multicast_address;
+        timerArgs->port = port;
         timerArgs->packet_to_send = create_group_specific_query_packet(multicast_address, suppress_flag,
                                                                        time_until_send);
         timerArgs->router = this;
@@ -598,9 +598,14 @@ void IGMPRouter::send_group_specific_query(in_addr multicast_address) {
         Timer *timer = new Timer(&IGMPRouter::send_scheduled_query, timerArgs);
         timer->initialize(this);
         timer->schedule_after_msec(time_until_send * 100);
-        query_timers.push_back(Pair<in_addr, Timer *>(multicast_address, timer));
+        Pair<in_addr,int> identifier = Pair<in_addr,int>(multicast_address, port);
+        query_timers.push_back(Pair<Pair<in_addr,int>, Timer *>(identifier, timer));
     }
 
+}
+
+void IGMPRouter::send(Packet *packet, int port){
+    output(port).push(packet);
 }
 
 void IGMPRouter::send_to_all_group_members(Packet *packet, in_addr group_address) {
@@ -618,13 +623,14 @@ void IGMPRouter::send_scheduled_query(Timer *timer, void *thunk) {
     IGMPRouter *router = args->router;
     Packet *packet = args->packet_to_send;
     in_addr address = args->multicast_address;
+    int port = args->port;
 
 
     if (router->is_timer_canceled(timer)) {
         return;
     }
 
-    router->send_to_all_group_members(packet, address);
+    router->output(port).push(packet);
 }
 
 
@@ -707,10 +713,12 @@ void IGMPRouter::change_group_to_exclude(int port, in_addr group_addr) {
 }
 
 
-void IGMPRouter::stop_scheduled_retransmissions(in_addr multicast_address) {
+void IGMPRouter::stop_scheduled_retransmissions(in_addr multicast_address, int port) {
     for (int i = 0; i < query_timers.size(); ++i) {
-        in_addr group_address = query_timers[i].first;
-        if (group_address == multicast_address) {
+        Pair<in_addr, int> identifier = query_timers[i].first;
+        in_addr group_address = identifier.first;
+        int port_timer = identifier.second;
+        if (group_address == multicast_address && port == port_timer) {
             query_timers.erase(query_timers.begin() + i);
             --i;
         }

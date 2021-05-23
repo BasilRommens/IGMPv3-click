@@ -59,12 +59,14 @@ public:
 
     static void send_scheduled_query(Timer*, void* thunk); // static to make it possible to use it in timers
     void send_to_all_group_members(Packet* packet, in_addr group_address);
+    void send(Packet *packet, int port);
 
     Packet* create_group_specific_query_packet(in_addr multicast_address, bool suppress_flag, int time_until_send);
 
     static void handle_expired_group_timer(Timer* timer, void* thunk);
 
     Timer* get_group_timer(in_addr group_address, int port);
+
 
 private:
     void process_udp(Packet* p, int port);
@@ -87,7 +89,7 @@ private:
     // Returns all ports on which someone is interested in reception of given multicast address
     Vector<int> get_group_members(in_addr multicast_address);
 
-    void send_group_specific_query(in_addr multicast_address);
+    void send_group_specific_query(in_addr multicast_address, int port);
 
     void change_group_to_exclude(int port, in_addr group_addr);
     Vector<int> get_attached_networks();
@@ -98,9 +100,9 @@ private:
 
     // Removes scheduled queries, used for "merging" queries
     // Note: Merging is interpreted as stopping the previous retransmissions and only sending new ones
-    void stop_scheduled_retransmissions(in_addr multicast_address);
+    void stop_scheduled_retransmissions(in_addr multicast_address, int port);
     bool is_timer_canceled(Timer* timer);
-    Vector<Pair<in_addr, Timer*>> query_timers;
+    Vector<Pair<Pair<in_addr,int>, Timer*>> query_timers;
 
 };
 
@@ -110,6 +112,7 @@ struct ScheduledQueryTimerArgs {
     in_addr multicast_address;
     Packet* packet_to_send;
     IGMPRouter* router;
+    int port;
 };
 
 struct GroupTimerArgs {
