@@ -47,7 +47,7 @@ void IGMPClient::process_udp(Packet *p) {
 void IGMPClient::process_query(QueryPacket *p, int port) {
     Query *q = p->to_query();
     if (not q->hasCorrectChecksum()) {
-        click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:", "Faulty checksum in Query");
+        click_chatter("\033[1;93m%-6s\033[0m %-6s", "Warning: ", "Faulty checksum in Query");
         return;
     }
     // References RFC 3376, section 5.2.
@@ -139,6 +139,7 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
         args->client = this;
         args->interface = port;
 
+        click_chatter("yeet");
         Timer *timer = new Timer(&IGMPClient::respondToQuery, args);
         timer->initialize(this);
         // This should be a group timer, but there is no group and interface
@@ -146,7 +147,6 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
         timer->schedule_after_msec(delay * 1000);
 
         group_timers.push_back(std::make_tuple(port, timer, q->groupAddress));
-        click_chatter("here we crash 1");
         return;
     }
 
@@ -186,8 +186,8 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
 }
 
 void IGMPClient::process_other_packet(Packet *, int) {
-    click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:",
-                  "IGMP type is something else than a query -> Silently ignoring");
+    click_chatter("\033[1;93m%-6s\033[0m %-6s", "Warning:",
+                  "IGMP type is something else than a query (silently ignoring)");
     return;
 }
 

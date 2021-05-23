@@ -647,7 +647,7 @@ void IGMPRouter::process_group_record(GroupRecordPacket &groupRecord, int port) 
 
 void IGMPRouter::process_report(ReportPacket *report, int port) {
     if (not report->hasCorrectChecksum()) {
-        click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:", "Faulty checksum in Report");
+        click_chatter("\033[1;93m%-6s\033[0m %-6s", "Warning:", "Faulty checksum in Report");
         return;
     }
     click_chatter("\e[1;32m%-6s %d\e[m", "Received report on port", port);
@@ -727,7 +727,7 @@ bool IGMPRouter::is_timer_canceled(Timer *timer) {
             return false;
         }
     }
-    click_chatter("\033[1;93m%-6s\033[0m%-6s", "Warning:", "Timer not triggered because merged with other query");
+    click_chatter("\033[1;93m%-6s\033[0m %-6s", "Warning:", "Timer not triggered because merged with other query");
     return true;
 }
 
