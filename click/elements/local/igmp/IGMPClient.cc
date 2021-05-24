@@ -40,7 +40,6 @@ void IGMPClient::process_udp(Packet *p) {
         output(2).push(p);
     } else {
         // drop packet
-        output(1).push(p);
     }
 }
 
