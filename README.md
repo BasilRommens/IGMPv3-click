@@ -2,6 +2,23 @@
 
 Project for Telecommunications system, Arno Deceuninck and Basil Rommens will implement IGMP
 
+## Files
+
+All click elements for our implementation of a subset of IGMPv3 can be found in `click/elements/local/igmp`.
+Our `.click` files can be found in `opgaven/igmp/scipts`. These must be copied to `click/scripts` in order to work. The
+setup also does this.
+
+## Easy Compile & Run
+
+We made your life easy by providing a `setup_vm.sh` script entirely free for any owner of our TCSP-IGMPv3 source code.
+Simply copy paste the `setup_vm.sh` script to your virtual machine and run it. This even clones the repo from GitHub.
+Disclaimer: You must have access to our GitHub repo. If not you can copy paste the TCSP-IGMPv3 source code folder to the
+home folder of the vm and run the script (although the git pull might give a permission error)
+
+You can also use `compile.sh` to compile and run on your own machine.
+
+Below you can see the seperate steps those scripts do.
+
 ## Compiling & Running click script
 
 In order to compile the project you need to execute the following commands in your favourite shell.
@@ -47,7 +64,7 @@ sudo ./start_click.sh
 ## Connecting with telnet
 
 The following table is a list of all the ports used for each click element. This can be used to access each
-corresponding element. 
+corresponding element.
 
 | Name | Port | 
 |:-----|--------:| 
@@ -67,10 +84,19 @@ read client22/igmp.tables
 write client22/igmp.leave 225.1.1.1
 read client22/igmp.tables
 ```
-
 You can also send commands without first having to execute the telnet command.
 
 ```shell
 echo "write client22/igmp.join 225.1.1.1" | telnet localhost 10004
 echo "write client22/igmp.leave 225.1.1.1" | telnet localhost 10004
 ```
+
+## Handlers
+These handlers can be called when connecting with telnet.
+
+| Type | Name | Description | Example |
+|:-----|------|-------------|--------:|
+| write | join | Joins the given multicast group | `write client22/igmp.join 225.1.1.1` |
+| write | leave | Leaves the given multicast group | `write client22/igmp.leave 225.1.1.1` |
+| write | crash | Crashes the given client | `write client22/igmp.crash` |
+| read | tables | Print the socket and interface multicast table of given client | `read client22/igmp.tables` | 
