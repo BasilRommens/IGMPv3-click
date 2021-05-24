@@ -257,13 +257,18 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
      *  If the resulting Current-State Record has an empty set of source
      *  addresses, then no response is sent.
      */
+    bool send = false;
+    Report *report = new Report();
     for (auto group_record: group_records_to_send) {
         if (group_record->isSourceAddressesEmpty() and group_record->record_type == Constants::MODE_IS_INCLUDE) {
             // Do nothing
             continue;
         }
-        Report *report = new Report();
+        send = true;
         report->addGroupRecord(group_record);
+    }
+
+    if (send) {
         // Generate the packet
         Packet *p = report->createPacket();
         // Send the packet
