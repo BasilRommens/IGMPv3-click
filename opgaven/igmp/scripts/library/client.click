@@ -66,5 +66,5 @@ elementclass Client {
 		-> output;
 
 	in_cl[1] -> [1]arpq;
-	in_cl[2] -> ToDump("client.pcap") -> igmp_classifier; // in order to filter out the IGMP packets
+	in_cl[2] -> igmp_classifier; // in order to filter out the IGMP packets
 }
