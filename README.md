@@ -91,6 +91,13 @@ echo "write client22/igmp.join 225.1.1.1" | telnet localhost 10004
 echo "write client22/igmp.leave 225.1.1.1" | telnet localhost 10004
 ```
 
+## More router interfaces
+It is possible to add more interfaces to the router, just by specifying the ports on which they
+would be delivered on. For the default topology this will be port 1 and 2. Port 3 is always reserved
+for UDP, so it can never be used for using other packets. For this part there is no checking of
+duplicates in the port list, so it will break the code. This is not written out in click scripts,
+so if desired click scripts can be written for it, like the current click script in the router.
+
 ## Handlers
 These handlers can be called when connecting with telnet.
 

@@ -43,7 +43,7 @@ IGMPRouter::IGMPRouter() {
 IGMPRouter::~IGMPRouter() {}
 
 
-int IGMPRouter::configure(Vector <String> &, ErrorHandler *) {
+int IGMPRouter::configure(Vector <String> & conf, ErrorHandler * errh) {
     // Periodically sent general queries
     GeneralQueryTimerArgs *args = new GeneralQueryTimerArgs();
     args->router = this;
@@ -51,6 +51,15 @@ int IGMPRouter::configure(Vector <String> &, ErrorHandler *) {
     Timer *timer = new Timer(&IGMPRouter::send_general_queries, args);
     timer->initialize(this);
     timer->schedule_after_msec(Defaults::QUERY_INTERVAL * 1000);
+
+    if (conf.size() != noutputs() - 2)
+        return errh->error("need %d arguments, one per output port", noutputs() - 2);
+
+    for (int i = 0; i < conf.size(); i++) {
+        int temp;
+        sscanf(conf[i].c_str(), "%d", &temp);
+        attached_networks.push_back(temp);
+    }
     return 0;
 }
 
@@ -74,9 +83,6 @@ void IGMPRouter::send_general_queries(Timer *timer, void *thunk) {
 Vector<int> IGMPRouter::get_attached_networks() {
     // TODO: klopt dit?
     //  smh hoe moet ik een vector met een initializer list aanmaken?
-    Vector<int> attached_networks;
-    attached_networks.push_back(1);
-    attached_networks.push_back(2);
     return attached_networks;
 }
 

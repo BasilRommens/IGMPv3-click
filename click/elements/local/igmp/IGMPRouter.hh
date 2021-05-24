@@ -29,6 +29,7 @@ public:
     ~IGMPRouter();
 
     Vector<Pair<int, GroupState*>> group_states;
+    Vector<int> attached_networks;
 
     // rfc3376, p.31
     int get_current_state(in_addr multicast_address, int port);
