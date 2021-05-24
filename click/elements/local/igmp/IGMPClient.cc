@@ -160,9 +160,9 @@ void IGMPClient::process_query(QueryPacket *p, int port) {
      */
     if (isPendingResponse(q->groupAddress)
         and (q->isGroupSpecificQuery() or isSourceListEmpty(q->groupAddress, port))) {
-        Vector <in_addr>* sourceList = getSourceList(q->groupAddress, port);
+        Vector <in_addr> *sourceList = getSourceList(q->groupAddress, port);
         if (not sourceList) {
-            sourceList = new Vector<in_addr>{};
+            sourceList = new Vector <in_addr>{};
         }
         sourceList->clear();
 
@@ -505,6 +505,9 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
     StateChangeArgs *args = getChangeInterfaceActiveArgs(interface);
     Timer *timer = getChangeInterfaceActiveTimer(interface);
     Report *pending_report = args->report;
+    for (auto group_record: pending_report->group_records) {
+        state_change_report->addGroupRecord(group_record);
+    }
 
     /**
      * The transmission of the merged State-Change Report terminates
@@ -528,8 +531,10 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
      * until [Robustness Variable] State-Change reports have been sent by
      * the host. This is done in order to ensure that a series of
      * successive state changes do not break the protocol robustness.
+     *
+     * sources will always be skipped, because we don't work with sources
      */
-    bool source_is_included = true;
+    bool source_is_included = false;
     if (not source_is_included) {
         args->retransmit = Defaults::ROBUSTNESS_VARIABLE - 1;
     }
@@ -547,11 +552,31 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
      * scheduled additional reports, then the next State-Change report will
      * include Source-List-Change records.
      */
-    bool filter_mode_change = false;
+    bool filter_mode_change = state_change_report->containsFilterModeChangeRecord();
     if (filter_mode_change) {
-        // todo
+        // Nothing because no source-list-change records
     }
 
+    StateChangeArgs *_args = new StateChangeArgs();
+    _args->retransmit = args->retransmit;
+    _args->client = this;
+    _args->interface = interface;
+    _args->report = state_change_report;
+    Timer *_timer = new Timer(IGMPClient::respondToUpdate, _args);
+    _timer->initialize(this);
+    srand48(time(0));
+    double delay = drand48() * Defaults::UNSOLICITED_REPORT_INTERVAL * 1000;
+    _timer->schedule_after_msec(delay);
+
+    change_interface_active.push_back(Pair<StateChangeArgs *, Timer *>(_args, _timer));
+    return;
+}
+
+void IGMPClient::respondToUpdate(Timer *timer, void *thunk) {
+    StateChangeArgs *args = static_cast<StateChangeArgs *>(thunk);
+    Report *state_change_report = args->report;
+    IGMPClient *client = args->client;
+    in_addr multicast_addr = args->multicast_addr;
     /**
      * Each time a State-Change Report is transmitted, the contents are
      * determined as follows. If the report should contain a Filter-Mode-
@@ -568,16 +593,35 @@ void IGMPClient::updateStateChangeReport(in_addr interface, in_addr multicast_ad
      */
     Report *report = new Report();
     if (state_change_report->containsFilterModeChangeRecord()) {
-
-        Vector <in_addr> source_list = interfaceMulticastTable->getRecord(multicast_addr)->source_list;
-        GroupRecord *newGroupRecord = new GroupRecord(filter_mode, multicast_addr, source_list);
-        if (interfaceMulticastTable->is_in(multicast_addr)) {
+        Vector <in_addr> source_list = client->interfaceMulticastTable->getRecord(multicast_addr)->source_list;
+        GroupRecord *newGroupRecord = new GroupRecord(0, multicast_addr, source_list);
+        if (client->interfaceMulticastTable->is_in(multicast_addr)) {
             newGroupRecord->record_type = Constants::CHANGE_TO_INCLUDE_MODE;
         } else {
             newGroupRecord->record_type = Constants::CHANGE_TO_EXCLUDE_MODE;
         }
         report->addGroupRecord(newGroupRecord);
     }
+    Packet *p = report->createPacket();
+    client->output(0).push(p);
+    args->retransmit -= 1;
+    if (args->retransmit == 0) {
+        timer->unschedule();
+        for (Vector < Pair < StateChangeArgs * , Timer * >> ::iterator it = client->change_interface_active.begin();
+                it !=
+                client->change_interface_active.end();
+        ++it) {
+            if (it->second == timer) {
+                client->change_interface_active.erase(it);
+                break;
+            }
+        }
+        return;
+    }
+
+    srand48(time(0));
+    double delay = drand48() * Defaults::UNSOLICITED_REPORT_INTERVAL * 1000;
+    timer->schedule_after_msec(delay);
     return;
 }
 
@@ -643,10 +687,9 @@ void IGMPClient::IPMulticastListen(int socket, in_addr interface, in_addr multic
      *
      * (RFC 3376, section 5.1.)
      */
-    // TODO further implement this part, but for now skip
     if (isChangeInterfaceActive(interface)) {
-//        updateStateChangeReport(interface, multicast_address, filter_mode, source_list);
-//        return;
+        updateStateChangeReport(interface, multicast_address, filter_mode, source_list);
+        return;
     }
     // Send report packet
     filter_mode = new_filter_mode(old_state, filter_mode);

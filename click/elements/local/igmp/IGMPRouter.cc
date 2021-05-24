@@ -266,6 +266,10 @@ void IGMPRouter::process_udp(Packet *p, int port) {
 
 void IGMPRouter::process_query(QueryPacket *query, int port) {
     click_chatter("\e[1;32m%-6s %d\e[m", "Received query on port %d", port);
+    if (not query->to_query()->hasCorrectChecksum()) {
+        click_chatter("\033[1;93m%-6s\033[0m %-6s", "Warning:", "Faulty checksum in Query");
+        return;
+    }
     // rfc 6.6.1
     /**
      * When a router sends or receives a query with the Suppress Router-Side
@@ -426,7 +430,7 @@ void IGMPRouter::handle_expired_group_timer(Timer *timer, void *thunk) {
     // Check if this expired timer is the most recent timer
     if (groupState->group_timer != timer) {
         // There has been set a new timer, this one can be ignored
-        click_chatter("Not expired, group timer has still %d s left",
+        click_chatter("Not expired, group timer has still %f s left",
                       get_sec_before_expiry(groupState->group_timer));
         return;
     }

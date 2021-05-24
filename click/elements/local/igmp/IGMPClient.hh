@@ -125,6 +125,7 @@ private:
 
     static void respondToQuery(Timer*, void*);
     static void respondToStateChange(Timer*, void*);
+    static void respondToUpdate(Timer*, void*);
 
     SocketMulticastTable* socketMulticastTable;
     InterfaceMulticastTable* interfaceMulticastTable;
@@ -157,6 +158,7 @@ struct StateChangeArgs {
     int retransmit;
     Report* report;
     in_addr interface;
+    in_addr multicast_addr;
 };
 
 CLICK_ENDDECLS
