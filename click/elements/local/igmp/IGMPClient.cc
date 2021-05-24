@@ -272,7 +272,7 @@ void IGMPClient::respondToQuery(Timer *timer, void *thunk) {
         // Generate the packet
         Packet *p = report->createPacket();
         // Send the packet
-        client->output(interface).push(p);
+        client->output(0).push(p);
     }
 
     /**
