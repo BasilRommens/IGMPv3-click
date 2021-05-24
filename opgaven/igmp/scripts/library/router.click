@@ -28,7 +28,7 @@ elementclass Router {
 					224.0.0.0/4 4);
 
 	// IGMP router
-	igmp::IGMPRouter; // This router will process and handle the IGMP related packets
+	igmp::IGMPRouter(1, 2); // This router will process and handle the IGMP related packets
 	//igmp_send::IGMPRouter; // This router will send the UDP packets
 	// Will copy into the 2 igmp routers
 	//copy::Tee(2);
