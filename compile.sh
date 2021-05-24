@@ -1,27 +1,16 @@
-#!/bin/sh
+set -e # exit when error
 
-# Exit on error
-set -e
-
-# Change the directory to /home/student
-cd
-
-git clone https://github.com/BasilRommens/TCSP-IGMPv3
-
-# Copy our implementation files to click in the home folder
-rm -rf click/elements/local/igmp/
-cp -r TCSP-IGMPv3/click/elements/local/igmp click/elements/local/
-rm -rf click/scripts/
-cp -r TCSP-IGMPv3/opgaven/igmp/scripts click/scripts/
-
-# Configure & Compile
 cd click
 ./configure --disable-linuxmodule --enable-local --enable-etherswitch
 make elemlist
 make
 
-sudo scripts/setup.sh
+cd ..
+rm -rf click/scripts/
+cp -r opgaven/igmp/scripts click/scripts
+rm -rf click-reference
+cp -r referentie-oplossingen/igmp click-reference
+sudo click/scripts/setup.sh
 
-# Start
-cd scripts
+cd click/scripts
 sudo ./start_click.sh

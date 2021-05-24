@@ -18,8 +18,8 @@ make
 Since the implementation must run on the vm, the commands described below are used to run the implementation on the
 virtual machine.
 **Setup**
-These commands are used to set up the correct scripts in the correct locations in order to execute them
-properly.
+These commands are used to set up the correct scripts in the correct locations in order to execute them properly.
+
 ```shell
 rm -rf click/scripts/
 cp -r opgaven/igmp/scripts click/scripts
@@ -47,14 +47,15 @@ sudo ./start_click.sh
 ## Connecting with telnet
 
 The following table is a list of all the ports used for each click element. This can be used to access each
-corresponding element.
-| Name |  Port  |
-|:-----|--------:|
-| router   | 10001|
-| server | 10002 |
-| client21 | 10003 |
-| client22 | 10004 |
-| client31 | 10005 |
+corresponding element. 
+
+| Name | Port | 
+|:-----|--------:| 
+| router | 10001| 
+| server | 10002 | 
+| client21 | 10003 | 
+| client22 | 10004 | 
+| client31 | 10005 | 
 | client32 | 10006 |
 
 Here is an example for client22 with port 10004.
